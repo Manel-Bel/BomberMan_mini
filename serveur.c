@@ -5,30 +5,38 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <err.h>
+#include <pthread.h>
+
 
 
 #define PORT 2024
 #define SIZE 1024
 #define H 20
-#define L 20
+#define W 20
+
+typedef struct partie partie;
 
 struct player{
   int sockcom;
   int *rang;
   int id; 
   int idEq;
-  partie *par;
+  partie *p;
   int is_pret;
   
-}typedef struct player player;
+};typedef struct player player;
+
 
 struct partie{
-  int grille[H][L]; // 0 : case vide , 1 : mur indestructible, 2:mur destructible ,3:bombe, 4:explosée par une bombe, 5+i si le joueur d'id. est dans la case
+  int **grille; // 0 : case vide , 1 : mur indestructible, 2:mur destructible ,3:bombe, 4:explosée par une bombe, 5+i si le joueur d'id. est dans la case
+  player *plys[4];
   int len; // nombre joueur en cours
-  player 
+  pthread_t thread;
   
-}typedef struct partie partie;
+};
+
 
 
 
@@ -43,15 +51,67 @@ void *game_4p(void* args){
   
 }
 
-void *lancer_partie(void* args,int is_4p){
+player *initplayer(int sock){
+  player *p=malloc(sizeof(player));
+  p->sockcom=sock;
+  
+  return p;
+}
 
+partie * initpartie(){
+  partie *p=malloc(sizeof(struct partie));
+  int **tmp=malloc(sizeof(int *)*H);
+  if (tmp==NULL){
+    err(-1,"probleme d'allocation de memoire");
+  }
+  for (size_t i=0;i<H;i++){
+    tmp[i]=malloc(W*sizeof(int));
+     if (tmp[i]==NULL){
+       err(-1,"probleme d'allocation de memoire");
+     }
+  }
+  p->grille=tmp;
+  p->len=0;
+  p->thread=0;
+  return p;
+  
+}
+
+/*retourne 1 si l'ajout est reussi ,0 sinon*/
+int ajoutplayer(partie *p ,player *pl){
+  if (p->len>=4){
+    return 0;
+  }
+  p->plys[p->len]=pl;
+  p->len+=1;
+  return 1;
+  
 }
 
 
 
 
-void *surveillant(void *arg){
+void *serveur_partie(void *arg){
   
+  
+}
+
+
+void integPartie(partie **games,int *pos,player *pl){
+  /* s'il n'existe pas d'une telle partie */
+  if(!games[*pos]){
+    // on cree une nouvelle partie puis on ajoute le player dans la partie
+    games[*pos]=initpartie();
+  }
+  /* on teste si la partie est remplie alors on cree une nouvelle partie pour le joueur*/
+  if (!ajoutplayer(games[*pos],pl)){
+    (*pos)+=1;
+    games[*pos]=initpartie();
+    ajoutplayer(games[*pos],pl);
+  }
+  
+  pl->p=games[*pos];
+      
 }
 
 
@@ -59,27 +119,21 @@ void *surveillant(void *arg){
 int main_serveur(int argc,char ** argv){
   
   /*tableau de parties en mode 4 advers */
-  partie games_4p[SIZE];
+  partie *games_4p[SIZE];
   memset(games_4p,0,sizeof(games_4p));
   int p1=0;
-  mutex_t verrou1=PTHREAD_MUTEX_INITIALIZER;
 
   /* tableau de parties en mode equipes */
-  partie games_equipes[SIZE];
+  partie *games_equipes[SIZE];
   memset(games_equipes,0,sizeof(games_equipes));
   int p2=0;
-  mutex_t verrou2=PTHREAD_MUTEX_INITIALIZER;
 
 
-  /* tableau des threads */
-
-  thread_t threads[SIZE*2];
-  int p3=0;
-  
+  /* tableau des threads */  
 
   struct sockaddr_in6 address_sock;
   address_sock.sin6_family=AF_INET6;
-  address_sock.sin6_port=htons(atoi(PORT));
+  address_sock.sin6_port=htons(PORT);
   address_sock.sin6_addr=in6addr_any;
 
   int sock=socket(PF_INET6,SOCK_STREAM,0);
@@ -88,7 +142,7 @@ int main_serveur(int argc,char ** argv){
   }
   
   int optval=0;
-  int r=setsockopt(sock,IPROTO_IPV6,IPV6_V6ONLY,&optval,sizeof(optval));
+  int r=setsockopt(sock,IPPROTO_IPV6,IPV6_V6ONLY,&optval,sizeof(optval));
   
   if(r<0) perror("impossible utiliser le port");
 
@@ -106,13 +160,15 @@ int main_serveur(int argc,char ** argv){
   while(1){
     
     /* attente de la connexion */
-    int sockclient=accept(sock,&addrclient,&size);
+    struct sockaddr_in6 addrclient;
+    int size=0;
+    int sockclient=accept(sock,(struct sockaddr *)&addrclient,&size);
     
     /* En cas d'erreur ,affiche l'adresse du connexion echouee*/
-    int size=0;
-    char addr[100];
+    
+    char addr[INET6_ADDRSTRLEN];
     if(sockclient<0){
-      inet_ntop(AF_INET6,addrclient.sin6_addr,addr,100);
+      inet_ntop(AF_INET6,&addrclient.sin6_addr,addr,INET6_ADDRSTRLEN);
       printf("echec de connexion de %s\n",addr);
       continue;
     }
@@ -142,11 +198,49 @@ int main_serveur(int argc,char ** argv){
     int16_t CODEREQ=message>>3;
     int16_t ID=(message >> 1) & 6;
     int16_t EQ=message&1;
-    
+
+    int is_4p=0;
+    int is_ready=0;
+    switch (CODEREQ){
+    case 1 : is_4p=1;break;
+    case 2 : is_4p=0;break;
+    case 3 : is_4p=1;is_ready=1;break;
+    case 4 : is_ready=1;break;
+    default :
+      break;
+    }
+
+    /* on teste si la partie existe deja sinon on cree une nouvelle partie */
+    player *pl=initplayer(sockclient);
+
+    /* integrer le player dans une partie */
+    if(is_4p){
+      integPartie(games_4p,&p1,pl);
+    }else{
+      integPartie(games_equipes,&p2,pl);
+    }
+
+    /* on teste ensuite si une partie est remplie*/
+
+    if(games_4p[p1]->len==4){
+      if(!games_4p[p1]->thread){
+	if(pthread_create(&(games_4p[p1]->thread),NULL,serveur_partie,games_4p[p1])<0){
+	  err(-1,"probleme de creation threads");
+	}
+      }
+      
+    }
+    if(games_equipes[p2]->len==4){
+      if(!games_equipes[p2]->thread){
+	if(pthread_create(&(games_equipes[p2]->thread),NULL,serveur_partie,games_equipes[p1])<0){
+	  err(-1,"probleme de creation threads");
+	}
+      }
+    }
   }
+    
+}
 
-  
-
-  
-  
+int main(){
+  printf("test\n");
 }

@@ -73,6 +73,9 @@ partie * initpartie(){
   p->grille=tmp;
   p->len=0;
   p->thread=0;
+
+  /* initialisation de la grille */
+
   return p;
   
 }
@@ -244,3 +247,4 @@ int main_serveur(int argc,char ** argv){
 int main(){
   printf("test\n");
 }
+//gcc -o serveur serveur.c -lncurses -lpthread

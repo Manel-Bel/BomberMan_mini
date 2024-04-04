@@ -6,18 +6,24 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
-
-#include  "util.h"
-
+#include "util.h"
 
 
-int init_socket();
-int connect_to_server(struct sockaddr_in6 adr, int fdsock);
-void affiche_adresse(struct sockaddr_in6 adr);
-void send_message(int sockfd, const char *message);
-void receive_message(int sockfd);
+typedef struct {
+    uint16_t entete; // Code de la requête
+    uint16_t port_udp;       // Identifiant du joueur
+    uint16_t port_diff;
+    char adr[16];       // 
+} ServerMessage22;
 
+//initialize the socket
+int init_socket(int socket_type);
 
+int connect_to_server(int fdsock);
+
+int send_message(int sockfd);
+
+ServerMessage22* receive_message(int sockfd);
 
 
 #endif 

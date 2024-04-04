@@ -1,18 +1,5 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <netdb.h>
-#include <arpa/inet.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <err.h>
-#include <pthread.h>
+#include "../header/serveur.h"
 
-
-
-#define PORT 2024
-#define SIZE 1024
 #define H 20
 #define W 20
 
@@ -220,6 +207,24 @@ int main_serveur(int argc,char ** argv){
     }
   }
     
+}
+
+void free_player(Player * p) {
+    /*free memory allocated for a Player structure*/
+    free(p->nom);
+    free_partie(p->partie);
+    free(p->rang);
+    free(p);
+}
+
+Player* init_player_struct(char * name, char choix){
+    Player * player = malloc(sizeof(Player));
+    if(player == NULL){
+        perror("malloc in init player struct fail");
+        return NULL;
+    }
+   
+    return player;  
 }
 
 

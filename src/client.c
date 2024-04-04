@@ -21,5 +21,13 @@ void send_message(int sockfd, const char *message){
 
 }
 void receive_message(int sockfd){
-    
+
+}
+
+
+
+int main(int argc, char const *argv[])
+{
+    /* code */
+    return 0;
 }

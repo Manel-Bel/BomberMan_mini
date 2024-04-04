@@ -11,13 +11,13 @@ void init_grille(int **grille) {
             if (i == 0 || i == H-1 || j == 0 || j == W-1 || (i % 2 == 0 && j % 2 == 0)) {
                 grille[i][j] = 1; // Mur indestructible
             }
-            // Placer les murs destructibles
-            else if ((i % 2 != 0 && j % 2 == 0 && j != W-1) || (i % 2 == 0 && j % 2 != 0 && i != H-1)) {
-                grille[i][j] = 2; // Mur destructible
-            }
-            // Espace ouvert
+            // Alternance entre murs destructibles et espaces ouverts pour créer des chemins
             else {
-                grille[i][j] = 0;
+                if ((i + j) % 4 == 0) { // Cette condition modifie la distribution des murs destructibles
+                    grille[i][j] = 2; // Mur destructible
+                } else {
+                    grille[i][j] = 0; // Espace ouvert
+                }
             }
         }
     }

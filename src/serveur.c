@@ -19,12 +19,12 @@
 typedef struct partie partie;
 
 struct player{
-  int sockcom;
-  int *rang;
-  int id; 
-  int idEq;
-  partie *p;
-  int is_pret;
+  int sockcom; // socket de communication client 
+  int *rang; // le classement du joueur 
+  int id;  // id player
+  int idEq; // id equipes si en mode equipes
+  partie *p; // données de la partie 
+  int is_pret; // pour savoir si le joueur est pret à jouer
   
 };typedef struct player player;
 
@@ -32,7 +32,7 @@ struct player{
 struct partie{
   int **grille; // 0 : case vide , 1 : mur indestructible, 2:mur destructible ,3:bombe, 4:explosée par une bombe, 5+i si le joueur d'id. est dans la case
   player *plys[4];
-  int len; // nombre joueur en cours
+  int nbplys; // nombre joueur en cours
   pthread_t thread;
   
 };
@@ -95,6 +95,9 @@ int ajoutplayer(partie *p ,player *pl){
 
 
 void *serveur_partie(void *arg){
+ // on teste tout d'aboord si les joueurs sont prets à jouer
+  partie * p=(partie *p) arg;
+ 
   
   
 }
@@ -132,8 +135,7 @@ int main_serveur(int argc,char ** argv){
   int p2=0;
 
 
-  /* tableau des threads */  
-
+  /* pas communication entre les parties donc possibilité d'utiliser processus que processus leger*/
   struct sockaddr_in6 address_sock;
   address_sock.sin6_family=AF_INET6;
   address_sock.sin6_port=htons(PORT);
@@ -244,7 +246,4 @@ int main_serveur(int argc,char ** argv){
     
 }
 
-int main(){
-  printf("test\n");
-}
-//gcc -o serveur serveur.c -lncurses -lpthread
+

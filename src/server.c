@@ -1,6 +1,5 @@
 #include "../header/server.h"
 #include "../header/util.h"
-
 #define H 20
 #define W 20
 
@@ -207,7 +206,7 @@ void *handlingRequest1(void *args){
     FD_ZERO(&rset);
    
     pthread_mutex_lock(ag->vnbr);
-    int len=ag->nbr;
+    int len=*(ag->nbr);
     pthread_mutex_unlock(ag->vnbr);
     int sockmax=0;
     for(size_t i=0;i<len;i++){
@@ -259,9 +258,9 @@ void *handlingRequest1(void *args){
 
           // integrer le player dans une partie 
           if(is_4p){
-            addPlayerInGame(games_4p,&p1,pl);
+            addPlayerInGames(games_4p,&p1,pl);
           }else{
-            addPlayerInGame(games_equipes,&p2,pl);
+            addPlayerInGames(games_equipes,&p2,pl);
           }
 
           pthread_mutex_lock(ag->vtab);
@@ -383,6 +382,13 @@ int main_serveur(int argc,char ** argv){
 
   }
     
+}
+
+void free_player(Player p){
+
+}
+int main(){
+  
 }
 
 

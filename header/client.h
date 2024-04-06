@@ -18,12 +18,10 @@ typedef struct {
 
 //initialize the socket
 int init_socket(int socket_type);
-
 int connect_to_server(int fdsock);
-
-int send_message(int sockfd);
-
+int send_message_2(int sockfd, const uint16 msg);
 ServerMessage22* receive_message(int sockfd);
+void print_ServerMessage22(const ServerMessage22* msg) ;
 
 
 #endif 

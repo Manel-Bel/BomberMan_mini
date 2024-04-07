@@ -2,11 +2,16 @@
 #define CLIENT_H
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <arpa/inet.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+// #include <arpa/inet.h>
 #include "util.h"
+
+#define MAX_MESSAGE_LENGTH 1024
 
 
 typedef struct {
@@ -16,12 +21,27 @@ typedef struct {
     char adr[16];       // 
 } ServerMessage22;
 
-//initialize the socket
-int init_socket(int socket_type);
-int connect_to_server(int fdsock);
-int send_message_2(int sockfd, const uint16 msg);
-ServerMessage22* receive_message(int sockfd);
-void print_ServerMessage22(const ServerMessage22* msg) ;
 
+typedef struct {
+    uint16_t codereq_id_eq; // Codereq, ID et EQ
+    uint16_t num_action; // Numéro du message modulo 2^13 et action
+} Action_msg;
+
+typedef struct{
+    uint16_t codereq_id_eq;
+    uint8_t len;
+    char data[MAX_MESSAGE_LENGTH];
+}ChatMessage;
+
+//initialize the socket
+int connect_to_server(int *sockfd, struct sockaddr_in6 *adr_tcp);
+int send_message_2(int sockfd, const uint16_t msg);
+ServerMessage22* receive_info(int sockfd);
+ServerMessage22 *extract_msg(void *buf);
+void print_ServerMessage22(const ServerMessage22* msg);
+int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct sockaddr_in6 *adr);
+void receive_chat_message(int socket_tcp);
+void receive_game_data(int soket_upd);
+int send_action(int socket_upd,const ServerMessage22* player_data,struct sockaddr_in6 *addr_udp);
 
 #endif 

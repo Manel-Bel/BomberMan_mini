@@ -1,5 +1,7 @@
 #ifndef SERVER_H
 #define  SERVER_H 
+#include <pthread.h>
+
 
 typedef struct Game Game;
 typedef struct Player Player;
@@ -19,10 +21,11 @@ struct Game{
   Player *plys[4];
   int nbplys; // nombre joueur en cours
   pthread_t thread;
+  char mode; // game mode : 1 pour 4p , 2 : equipes;
   
 };
 
-void free_player(player);
+void free_player(Player p);
 
 
 #endif

@@ -14,6 +14,30 @@ struct Arguments{
 
 };typedef struct Arguments Args;
 
+
+struct Request{
+  int16_t entete;
+};typedef struct Request Request;
+struct Request_action{
+  int16_t entete;
+  int16_t action;
+};typedef struct Request Request;
+
+struct Request_tchat{
+  int16_t entete;
+  unsigned char LEN;
+  char *DATA;
+};typedef struct Request Request;
+
+
+
+struct Answer {
+  int16_t entete;
+  int16_t PORTUDP;
+  int16_t PORTMDIFF;
+  char ADRMDIFF[16];
+};typedef struct Answer Answer;
+
 void *game_equipes(void* args){
   
   
@@ -32,7 +56,7 @@ Player * initplayer(int sock){
   return p;
 }
 
-Game * initpartie(){
+Game * initpartie(char mode){
   Game *p=malloc(sizeof(struct Game));
   int **tmp=malloc(sizeof(int *)*H);
   if (tmp==NULL){
@@ -47,6 +71,7 @@ Game * initpartie(){
   p->grille=tmp;
   p->nbplys=0;
   p->thread=0;
+  p->mode=mode;
 
   /* initialisation de la grille */
 
@@ -96,6 +121,8 @@ void *serveur_partie(void *arg){
  // on teste tout d'aboord si les joueurs sont prets à jouer
   Game * p=(Game *) arg;
   int socks[4];
+  int sends[4];
+  memset(sends,0,sizeof(int)*4);
   for (size_t i=0;i<4;i++){
     socks[i]=p->plys[i]->sockcom;
   }
@@ -136,7 +163,7 @@ void *serveur_partie(void *arg){
   /*preparer socket pour adresse pour la multidiffusion */
   struct sockaddr_in6 gaddr;
 
-
+  
   while(n<4){
     fd_set wset;
     FD_ZERO(&wset);
@@ -149,14 +176,29 @@ void *serveur_partie(void *arg){
 
     for (size_t i=0;i<4;i++){
       if(FD_ISSET(socks[i],&wset)){
-        int ID=i;
-        
+        if(!sends[i]){
+          Answer an;
+           //// A revoir "
+          an.entete=htons((p->mode+8)<<3 | i<<1 | 3);               
+          an.PORTMDIFF=htons(port_diff);
+          memcpy(an.ADRMDIFF,"ff12::1:2:3",12);
+          int totalsend=0;
+          while(totalsend<sizeof(Answer)){
+            int nbr=send(socks[i],&an+totalsend,sizeof(Answer)-totalsend,0);
+            if(nbr<0){
+              err(-1,"send serveur partie");
+            }else if( nbr==0){
+              err(-1,"connexion stopped");
+            }
+            totalsend+=nbr;
+          }
+
+        }
       }
     }
 
     
-    
-
+  
   }
   
   
@@ -166,16 +208,16 @@ void *serveur_partie(void *arg){
 
 // Handling Integration Request
 
-void addPlayerInGames(Game **games,int *pos,Player *pl){
+void addPlayerInGames(Game **games,int *pos,Player *pl,char mode){
   //s'il n'existe pas d'une telle partie 
   if(!games[*pos]){
     // on cree une nouvelle partie puis on ajoute le player dans la partie
-    games[*pos]=initpartie();
+    games[*pos]=initpartie(mode);
   }
    //on teste si la partie est remplie alors on cree une nouvelle partie pour le joueur 
   if (!addplayerInGame(games[*pos],pl)){
     (*pos)+=1;
-    games[*pos]=initpartie();
+    games[*pos]=initpartie(mode);
     addplayerInGame(games[*pos],pl);
   }
   
@@ -258,9 +300,9 @@ void *handlingRequest1(void *args){
 
           // integrer le player dans une partie 
           if(is_4p){
-            addPlayerInGames(games_4p,&p1,pl);
+            addPlayerInGames(games_4p,&p1,pl,1);
           }else{
-            addPlayerInGames(games_equipes,&p2,pl);
+            addPlayerInGames(games_equipes,&p2,pl,2);
           }
 
           pthread_mutex_lock(ag->vtab);
@@ -387,9 +429,7 @@ int main_serveur(int argc,char ** argv){
 void free_player(Player p){
 
 }
-int main(){
-  
-}
+
 
 
 

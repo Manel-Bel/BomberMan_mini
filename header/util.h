@@ -1,6 +1,10 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <net/if.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

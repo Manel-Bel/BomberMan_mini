@@ -1,436 +1,547 @@
 #include "../header/server.h"
 #include "../header/util.h"
+#include "../header/servanswer.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <net/if.h>
+#include <limits.h>
+
 #define H 20
 #define W 20
 
-int usedport[1024];
-
-
-struct Arguments{
+struct Arguments
+{
   int *socks;
   int *nbr;
   pthread_mutex_t *vtab;
   pthread_mutex_t *vnbr;
+};
+typedef struct Arguments Args;
 
-};typedef struct Arguments Args;
+struct Argsurveillants{
+  int *winner;
+  pthread_t **tab;
+  pthread_mutex_t **tabmutext;
+  pthread_cond_t *condvic;
+  pthread_mutex_t *vicmutex;
+  Player **plys;
 
+};typedef struct Argsurveillants argsurv;
 
-struct Request{
+struct Request
+{
   int16_t entete;
-};typedef struct Request Request;
-struct Request_action{
+};
+typedef struct Request Request;
+
+struct Request_action
+{
   int16_t entete;
   int16_t action;
-};typedef struct Request Request;
+};
+typedef struct Request Request;
 
-struct Request_tchat{
+struct Request_tchat
+{
   int16_t entete;
   unsigned char LEN;
   char *DATA;
-};typedef struct Request Request;
+};
+typedef struct Request Request;
 
-
-
-struct Answer {
-  int16_t entete;
-  int16_t PORTUDP;
-  int16_t PORTMDIFF;
-  char ADRMDIFF[16];
-};typedef struct Answer Answer;
-
-void *game_equipes(void* args){
-  
-  
-  
+void *game_equipes(void *args)
+{
 }
 
-void *game_4p(void* args){
+void *game_4p(void *args)
+{
+  /* conversion void * to Player * */
+  Player *p=(Player *)args;
   
-  
+
 }
 
-Player * initplayer(int sock){
-  Player *p=malloc(sizeof(Player));
-  p->sockcom=sock;
-  
+void *surveiller(void *args){
+  argsurv * arg=(argsurv *) arg;
+  int winner;
+  pthread_mutex_lock(arg->vicmutex);
+  if(*(arg->winner)==__INT_MAX__){
+    pthread_cond_wait(arg->condvic,arg->vicmutex);
+    winner=*(arg->winner);
+  }
+  pthread_mutex_unlock(arg->vicmutex);
+
+  for(size_t i=0;i<4;i++){
+   char *msg;
+   if(arg->plys[i]->id!=winner){
+    msg="PERDU\n";
+   }else{
+    msg="GAGNE\n";
+   }
+   int total=0;
+   while(total<6){
+    int nbr=send(arg->plys[i]->sockcom,msg,6,0);
+    if(nbr<=0){
+      err(1,"send error");
+    }
+    total+=nbr;
+   }
+
+    pthread_mutex_lock(arg->tabmutext[i]);
+    close(arg->plys[i]->sockcom);
+    pthread_mutex_unlock(arg->tabmutext[i]);
+  }
+}
+
+int ** createBoard(){
+  int **tmp=malloc(H*sizeof(int *));
+  if(tmp==NULL){
+    err(-1,"problem malloc in createBoard");
+
+  }
+  for (size_t i=0;i<H;i++){
+    tmp[i]=malloc(sizeof(int)*W);
+    if(tmp[i]==NULL){
+      err(-1,"problem malloc in createBoard");
+    }
+  }
+  return tmp;
+}
+
+Player *initplayer(int sock)
+{
+  Player *p = malloc(sizeof(Player));
+  p->sockcom = sock;
+  p->Ready = 0;
   return p;
 }
 
-Game * initpartie(char mode){
-  Game *p=malloc(sizeof(struct Game));
-  int **tmp=malloc(sizeof(int *)*H);
-  if (tmp==NULL){
-    err(-1,"probleme d'allocation de memoire");
-  }
-  for (size_t i=0;i<H;i++){
-    tmp[i]=malloc(W*sizeof(int));
-     if (tmp[i]==NULL){
-       err(-1,"probleme d'allocation de memoire");
-     }
-  }
-  p->grille=tmp;
-  p->nbplys=0;
-  p->thread=0;
-  p->mode=mode;
+Game *initpartie(char mode)
+{
+  Game *p = malloc(sizeof(struct Game));
+  p->nbplys = 0;
+  p->thread = 0;
+  p->mode = mode;
 
   /* initialisation de la grille */
 
   return p;
-  
 }
 
 /*retourne 1 si l'ajout est reussi ,0 sinon*/
-int addplayerInGame(Game *p ,Player *pl){
-  if (p->nbplys>=4){
+int addplayerInGame(Game *p, Player *pl)
+{
+  if (p->nbplys >= 4)
+  {
     return 0;
   }
-  p->plys[p->nbplys]=pl;
-  p->nbplys+=1;
+  p->plys[p->nbplys] = pl;
+  p->nbplys += 1;
   return 1;
-  
 }
 
-// Return the index of the free slot in usedPort, and 0 otherwise. 
-int researchPort(int port){
-  int i;
-  for(i=0;usedport[i]!=0;i++){
-    if(usedport[i]==port){
-      return 0;
-    }
+void *server_game(void *args)
+{
+
+  /* convert void * to game * */
+  Game *g = (Game *)args;
+
+  //  number of task done
+  int n = 0;
+
+  /*prepare ports for udp */
+  int port_udp = genePort();
+  /* preparer socket pour UDP*/
+  int sock_udp = socket(PF_INET6, SOCK_DGRAM, 0);
+  if (sock_udp < 0)
+  {
+    err(-1, "creation sock_udp");
   }
-  return i;
-}
 
-int genePort(){
-  while(1){
-    int newport=1024 + rand() % (49151 - 1024 + 1);
-    int i;
-    if(!(i=researchPort(newport))){
-      usedport[i]=newport;
-      return newport;
-    }
+  struct sockaddr_in6 udp_addr;
+  memset(&udp_addr, 0, sizeof(udp_addr));
+  udp_addr.sin6_family = AF_INET6;
+  udp_addr.sin6_addr = in6addr_any;
+  udp_addr.sin6_port = htons(port_udp);
 
+  int ok = 1;
+  if (setsockopt(sock_udp, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0)
+  {
+    close(sock_udp);
+    err(1, "probleme SO_REUSEADDR");
   }
-  return 0;
-  
-}
 
+  /*prepare port for  multicast */
 
-
-void *serveur_partie(void *arg){
- // on teste tout d'aboord si les joueurs sont prets à jouer
-  Game * p=(Game *) arg;
-  int socks[4];
-  int sends[4];
-  memset(sends,0,sizeof(int)*4);
-  for (size_t i=0;i<4;i++){
-    socks[i]=p->plys[i]->sockcom;
+  int port_diff = genePort();
+  /*prepare socket for  multicast */
+  int sockdiff = socket(PF_INET6, SOCK_DGRAM, 0);
+  if (sockdiff < 0)
+  {
+    err(1, "creation sockdiff");
   }
-  /* preparer les données pour les joueurs */
-  int n=0;
+  /*prepare IPv6 for multicast*/
+  struct in6_addr adr;
+  generateAdrMultidiff(&adr);
 
-  /* preparer les ports pour udp et multidifffusion */
-  int port_udp=genePort();
-  int port_diff=genePort();
+  /*prepare adresse for multicast */
+  struct sockaddr_in6 grvadr;
+  memset(&grvadr, 0, sizeof(grvadr));
+  grvadr.sin6_family = AF_INET6;
+  generateAdrMultidiff(&grvadr.sin6_addr);
+  grvadr.sin6_port = htons(genePort());
+  int ifindex = if_nametoindex("eth0");
 
- /* preparer socket pour UDP*/
- int sock_udp=socket(PF_INET6,SOCK_DGRAM,0);
- if(sock_udp<0){
-  err(-1,"creation sock_udp");
- }
+  int task_done[4] = {0};
 
- 
-
- struct sockaddr_in6 udp_addr;
- memset(&udp_addr,0,sizeof(udp_addr));
- udp_addr.sin6_family=AF_INET6;
- udp_addr.sin6_addr=in6addr_any;
- udp_addr.sin6_port=htons(port_udp);
-
- int ok=1;
- if(setsockopt(sock_udp,SOL_SOCKET,SO_REUSEADDR,&ok,sizeof(ok))<0){
-  close(sock_udp);
-  err(1,"probleme SO_REUSEADDR");
- }
-
-
-
-  /*preparer socket pour la multidiffusion */
-  int sockdiff=socket(PF_INET6,SOCK_DGRAM,0);
-  if(sockdiff<0){
-    err(1,"creation sockdiff");
-  }
-  /*preparer socket pour adresse pour la multidiffusion */
-  struct sockaddr_in6 gaddr;
-
-  
-  while(n<4){
+  /* send init info to clients*/
+  while (n < 4)
+  {
     fd_set wset;
     FD_ZERO(&wset);
-    int sockmax=0;
-    for (size_t i=0;i<4;i++){
-      sockmax=(socks[i]>sockmax)?socks[i]:sockmax;
-      FD_SET(socks[i],&wset);
+    int sockmax = 0;
+    for (size_t i = 0; i < 4; i++)
+    {
+      int sock = g->plys[i]->sockcom;
+      sockmax = (sock > sockmax) ? sock : sockmax;
+      FD_SET(sock, &wset);
     }
-    select(sockmax+1,0,&wset,0,NULL);
+    select(sockmax + 1, 0, &wset, 0, NULL);
 
-    for (size_t i=0;i<4;i++){
-      if(FD_ISSET(socks[i],&wset)){
-        if(!sends[i]){
-          Answer an;
-           //// A revoir "
-          an.entete=htons((p->mode+8)<<3 | i<<1 | 3);               
-          an.PORTMDIFF=htons(port_diff);
-          memcpy(an.ADRMDIFF,"ff12::1:2:3",12);
-          int totalsend=0;
-          while(totalsend<sizeof(Answer)){
-            int nbr=send(socks[i],&an+totalsend,sizeof(Answer)-totalsend,0);
-            if(nbr<0){
-              err(-1,"send serveur partie");
-            }else if( nbr==0){
-              err(-1,"connexion stopped");
-            }
-            totalsend+=nbr;
-          }
+    /* send player info*/
 
+    for (size_t i = 0; i < 4; i++)
+    {
+      int sock = g->plys[i]->sockcom;
+      g->plys[i]->id = i;
+      g->plys[i]->idEq = (i < 2) ? 0 : 1;
+
+      if (FD_ISSET(sock, &wset) && !task_done[i])
+      {
+        sendPlayerInfo(g->plys[i], g->mode, grvadr.sin6_addr);
+      }
+      n += 1;
+    }
+  }
+
+  /* waiting for sign of ready of players*/
+  n = 0;
+  while (n < 4)
+  {
+    fd_set rset;
+    FD_ZERO(&rset);
+    int sockmax = 0;
+    for (size_t i = 0; i < 4; i++)
+    {
+      int sock = g->plys[i]->sockcom;
+      sockmax = (sock > sockmax) ? sock : sockmax;
+      FD_SET(sock, &rset);
+    }
+    select(sockmax + 1, 0, &rset, 0, NULL);
+    for (size_t i = 0; i < 4; i++)
+    {
+      int sock = g->plys[i]->sockcom;
+      if (FD_ISSET(sock, &rset) && !g->plys[i]->Ready)
+      {
+        g->plys[i]->Ready = recvRequestReady(sock, g->mode);
+        if (g->plys[i])
+        {
+          n += 1;
         }
       }
     }
-
-    
-  
   }
-  
+
+  /* START GAME IF EVERYONE IS READY
+  One thread for everyone and one thread for surveillant
+  */
+  pthread_t tab[4];
+  pthread_mutex_t mutexstats[4];
+  pthread_t surveillant;
+
+  int **board=createBoard();
+  init_grille(board);
+
+  int *winner = malloc(sizeof(int));
+  *(winner) = __INT_MAX__;
+  pthread_cond_t condwin=PTHREAD_COND_INITIALIZER;
+  pthread_mutex_t vicmutex=PTHREAD_MUTEX_INITIALIZER;
+  for (size_t i = 0; i < 4; i++)
+  {
+    pthread_mutex_init(mutexstats+i,NULL);
+    g->plys[i]->lockstats=mutexstats+i;
+    g->plys[i]->winner=winner;
+    g->plys[i]->condwin=&condwin;
+    g->plys[i]->board=board;
+    g->plys[i]->vicmutex=&vicmutex;
+    
+    if (g->mode == 1)
+    {
+      if (pthread_create(&tab[i], NULL, game_4p, g->plys[i]) < 0)
+      {
+        err(-1, "problem of creation pthread");
+      }
+    }
+    else
+    {
+      if (pthread_create(&tab[i], NULL, game_equipes, g->plys[i]) < 0)
+      {
+        err(-1, "problem of creation pthrea");
+      }
+    }
+  }
+
+  /*create le thread surveillant*/
+  argsurv argsurvs;
+  argsurvs.plys=g->plys;
+  argsurvs.tab=tab;
+  argsurvs.condvic=&condwin;
+  argsurvs.tabmutext=mutexstats;
+  argsurvs.winner=winner;
+  argsurvs.vicmutex=&vicmutex;
   
 
+  if(pthread_create(&surveillant,NULL,surveiller,&argsurvs)<0){
+    err(-1,"problem de phtread_create");
+  }
+
+
   
+
+  for (size_t i = 0; i < 4; i++)
+  {
+    pthread_join(tab[i], NULL);
+  }
+  pthread_join(surveillant,NULL);
+  free(args);
+  free(winner);
+  return NULL;
 }
 
 // Handling Integration Request
 
-void addPlayerInGames(Game **games,int *pos,Player *pl,char mode){
-  //s'il n'existe pas d'une telle partie 
-  if(!games[*pos]){
+void addPlayerInGames(Game **games, int *pos, Player *pl, char mode)
+{
+  // s'il n'existe pas d'une telle partie
+  if (!games[*pos])
+  {
     // on cree une nouvelle partie puis on ajoute le player dans la partie
-    games[*pos]=initpartie(mode);
+    games[*pos] = initpartie(mode);
   }
-   //on teste si la partie est remplie alors on cree une nouvelle partie pour le joueur 
-  if (!addplayerInGame(games[*pos],pl)){
-    (*pos)+=1;
-    games[*pos]=initpartie(mode);
-    addplayerInGame(games[*pos],pl);
+  // on teste si la partie est remplie alors on cree une nouvelle partie pour le joueur
+  if (!addplayerInGame(games[*pos], pl))
+  {
+    (*pos) += 1;
+    games[*pos] = initpartie(mode);
+    addplayerInGame(games[*pos], pl);
   }
-  
-  pl->p=games[*pos]; 
 }
 
+void *handlingRequest1(void *args)
+{
+  Args *ag = (Args *)(args);
 
-
-
-void *handlingRequest1(void *args){
-  Args * ag=(Args *)(args);
-
-  int size=1024;
+  int size = 1024;
   /*tableau de parties en mode 4 advers */
   Game *games_4p[size];
-  memset(games_4p,0,sizeof(games_4p));
-  int p1=0;
+  memset(games_4p, 0, sizeof(games_4p));
+  int p1 = 0;
 
   /* tableau de parties en mode equipes */
   Game *games_equipes[size];
-  memset(games_equipes,0,sizeof(games_equipes));
-  int p2=0;
+  memset(games_equipes, 0, sizeof(games_equipes));
+  int p2 = 0;
 
-
-
-  while(1){
+  while (1)
+  {
     fd_set rset;
     FD_ZERO(&rset);
-   
+
     pthread_mutex_lock(ag->vnbr);
-    int len=*(ag->nbr);
+    int len = *(ag->nbr);
     pthread_mutex_unlock(ag->vnbr);
-    int sockmax=0;
-    for(size_t i=0;i<len;i++){
-      sockmax=(ag->socks[i]>sockmax)?ag->socks[i]:sockmax;
-      FD_SET(ag->socks[i],&rset);
+    int sockmax = 0;
+    for (size_t i = 0; i < len; i++)
+    {
+      sockmax = (ag->socks[i] > sockmax) ? ag->socks[i] : sockmax;
+      FD_SET(ag->socks[i], &rset);
     }
 
-    // si on a au moins une connexion 
-    if(len>0){
-      select(sockmax+1,&rset,0,0,NULL); // bloquante 
+    // si on a au moins une connexion
+    if (len > 0)
+    {
+      select(sockmax + 1, &rset, 0, 0, NULL); // bloquante
 
-      for(size_t i=0;i<len;i++){
-        int sockclient=ag->socks[i];
-        if(FD_ISSET(sockclient,&rset)){
+      for (size_t i = 0; i < len; i++)
+      {
+        int sockclient = ag->socks[i];
+        if (FD_ISSET(sockclient, &rset))
+        {
 
-           /*  recevoir le premier message et integrer le joueur dans une partie*/
+          /*  recevoir le premier message et integrer le joueur dans une partie*/
           uint16_t request;
-          size_t byterecv=0;
-          size_t bytetotalrecv=0;
-            
-          while(bytetotalrecv<sizeof(int16_t)){
-            byterecv=recv(sockclient,(&request)+bytetotalrecv,sizeof(int16_t),0);
-              
-            if(byterecv<0){
-              err(-1,"recv probleme");
-            }else if(byterecv==0){
-              err(-1,"connexion stopped");
-            }else{
-                bytetotalrecv+=byterecv;
+          size_t byterecv = 0;
+          size_t bytetotalrecv = 0;
+
+          while (bytetotalrecv < sizeof(int16_t))
+          {
+            byterecv = recv(sockclient, (&request) + bytetotalrecv, sizeof(int16_t), 0);
+
+            if (byterecv <= 0)
+            {
+              err(-1, "recv probleme");
             }
-              
+
+            bytetotalrecv += byterecv;
           }
-            //convertir BE en LE
-            request=ntohs(request);
+          // convertir BE en LE
+          request = ntohs(request);
 
-            //Lecture des données 
-            int16_t CODEREQ=request>>3;
+          // Lecture des données
+          int16_t CODEREQ = request >> 3;
 
-            int is_4p=0;
-            switch (CODEREQ){
-            case 1 : is_4p=1;break;
-            case 2 : is_4p=0;break;
-            default :
-              break;
-            }
+          int is_4p = (CODEREQ == 1) ? 1 : 0;
 
-          // on teste si la partie existe deja sinon on cree une nouvelle partie 
-          Player *pl=initplayer(sockclient);
+          // on teste si la partie existe deja sinon on cree une nouvelle partie
+          Player *pl = initplayer(sockclient);
 
-          // integrer le player dans une partie 
-          if(is_4p){
-            addPlayerInGames(games_4p,&p1,pl,1);
-          }else{
-            addPlayerInGames(games_equipes,&p2,pl,2);
+          // integrer le player dans une partie
+          if (is_4p)
+          {
+            addPlayerInGames(games_4p, &p1, pl, 1);
+          }
+          else
+          {
+            addPlayerInGames(games_equipes, &p2, pl, 2);
           }
 
           pthread_mutex_lock(ag->vtab);
-          memcpy(ag->socks+i,ag->socks+i+1,1024-i-1);
-          *(ag->nbr)-=1;
+          memcpy(ag->socks + i, ag->socks + i + 1, 1024 - i - 1);
+          *(ag->nbr) -= 1;
           pthread_mutex_unlock(ag->vtab);
 
-
-          if(games_4p[p1]->nbplys==4){
-           if(!games_4p[p1]->thread){
-	            if(pthread_create(&(games_4p[p1]->thread),NULL,serveur_partie,games_4p[p1])<0){
-	              err(-1,"probleme de creation threads");
-	            }
-            }
-      
-          }
-          if(games_equipes[p2]->nbplys==4){
-            if(!games_equipes[p2]->thread){
-              if(pthread_create(&(games_equipes[p2]->thread),NULL,serveur_partie,games_equipes[p1])<0){
-                err(-1,"probleme de creation threads");
+          if (games_4p[p1]->nbplys == 4)
+          {
+            if (!games_4p[p1]->thread)
+            {
+              if (pthread_create(&(games_4p[p1]->thread), NULL, server_game, games_4p[p1]) < 0)
+              {
+                err(-1, "probleme de creation threads");
               }
             }
           }
-          
+          if (games_equipes[p2]->nbplys == 4)
+          {
+            if (!games_equipes[p2]->thread)
+            {
+              if (pthread_create(&(games_equipes[p2]->thread), NULL, server_game, games_equipes[p2] < 0) < 0)
+              {
+                err(-1, "probleme de creation threads");
+              }
+            }
+          }
         }
       }
-      
-    }else{
+    }
+    else
+    {
       sleep(1);
     }
-
   }
-      
+  return NULL;
 }
 
-
 /* thread principal qui accepte que les demandes de connexion*/
-int main_serveur(int argc,char ** argv){
-  memset(usedport,0,1024);
-  usedport[0]=PORT_PRINCIPAL;
+int main_serveur()
+{
 
   /* pas communication entre les parties donc possibilité d'utiliser processus que processus leger*/
   struct sockaddr_in6 address_sock;
-  address_sock.sin6_family=AF_INET6;
-  address_sock.sin6_port=htons(PORT_PRINCIPAL);
-  address_sock.sin6_addr=in6addr_any;
+  address_sock.sin6_family = AF_INET6;
+  address_sock.sin6_port = htons(PORT_PRINCIPAL);
+  address_sock.sin6_addr = in6addr_any;
 
-  int sock=socket(PF_INET6,SOCK_STREAM,0);
-  if(sock<0){
-    err(-1,"creation de socket");
-  }
-  
-  int optval=0;
-  int r=setsockopt(sock,IPPROTO_IPV6,IPV6_V6ONLY,&optval,sizeof(optval));
-  
-  if(r<0) perror("impossible utiliser le port");
-
-  optval=1;
-  r=setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,&optval,sizeof(optval));
-  
-  if(r<0) perror("reutilisation de port impossible");
-
-  r=listen(sock,0);
-  if (r<0) {
-    err(-1,"listen");
+  int sock = socket(PF_INET6, SOCK_STREAM, 0);
+  if (sock < 0)
+  {
+    err(-1, "creation de socket");
   }
 
-  /*preparer les données partagée avec le thread qui 
+  int optval = 0;
+  int r = setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &optval, sizeof(optval));
+
+  if (r < 0)
+    perror("impossible utiliser le port");
+
+  optval = 1;
+  r = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
+
+  if (r < 0)
+    perror("reutilisation de port impossible");
+
+  r = listen(sock, 0);
+  if (r < 0)
+  {
+    err(-1, "listen");
+  }
+
+  /*preparer les données partagée avec le thread qui
   traite les messages d'intégration*/
 
-  int *socks=malloc(sizeof(int)*1024);
-  int *nbr=malloc(sizeof(int));
-  pthread_mutex_t vsocks=PTHREAD_MUTEX_INITIALIZER;
-  pthread_mutex_t vnbr=PTHREAD_MUTEX_INITIALIZER;
+  int *socks = malloc(sizeof(int) * 1024);
+  int *nbr = malloc(sizeof(int));
+  pthread_mutex_t vsocks = PTHREAD_MUTEX_INITIALIZER;
+  pthread_mutex_t vnbr = PTHREAD_MUTEX_INITIALIZER;
 
-  Args *arg=malloc(sizeof(Args));
-  arg->socks=socks;
-  arg->nbr=nbr;
-  arg->vnbr=&vnbr;
-  arg->vtab=&vsocks;
-
+  Args *arg = malloc(sizeof(Args));
+  arg->socks = socks;
+  arg->nbr = nbr;
+  arg->vnbr = &vnbr;
+  arg->vtab = &vsocks;
 
   /*lancement de thread de traitement de messages*/
   pthread_t thread;
-  if(pthread_create(&thread,NULL,handlingRequest1,arg)<0){
-    err(1,"handling Request thread problem");
+  if (pthread_create(&thread, NULL, handlingRequest1, arg) < 0)
+  {
+    err(1, "handling Request thread problem");
   }
 
   /* acceptation de connexion et integration de partie */
-  int pos=0;
-  while(1){
-    
+  int pos = 0;
+  while (1)
+  {
+
     /* attente de la connexion */
     struct sockaddr_in6 addrclient;
-    int size=0;
-    int sockclient=accept(sock,(struct sockaddr *)&addrclient,&size);
-    
+    int size = 0;
+    int sockclient = accept(sock, (struct sockaddr *)&addrclient, &size);
+
     /* En cas d'erreur ,affiche l'adresse du connexion echouee */
-    
+
     char addr[INET6_ADDRSTRLEN];
-    inet_ntop(AF_INET6,&addrclient.sin6_addr,addr,INET6_ADDRSTRLEN);
-    if(sockclient<0){
-      printf("ECHEC: connexion de %s\n",addr);
+    inet_ntop(AF_INET6, &addrclient.sin6_addr, addr, INET6_ADDRSTRLEN);
+    if (sockclient < 0)
+    {
+      printf("ECHEC: connexion de %s\n", addr);
       continue;
-    }else{
-      printf("OK :connexion de %s\n",addr);
     }
-    
+    else
+    {
+      printf("OK :connexion de %s\n", addr);
+    }
+
     pthread_mutex_lock(&vsocks);
-    pos=(*nbr);
-    socks[pos]=sockclient;
+    pos = (*nbr);
+    socks[pos] = sockclient;
     pthread_mutex_unlock(&vsocks);
 
     pthread_mutex_lock(&vnbr);
-    *nbr+=1;
+    *nbr += 1;
     pthread_mutex_unlock(&vnbr);
-
-
-
   }
-    
 }
 
-void free_player(Player p){
-
+void free_player(Player p)
+{
 }
-
-
-
-
-

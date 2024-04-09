@@ -79,7 +79,7 @@ int connect_to_server(int *sockfd, struct sockaddr_in6 *adr_tcp){
         perror("Erreur lors de la création de la socket");
         return 1;
     }
-    if(adr_tcp = NULL)
+    if(adr_tcp == NULL)
        adr_tcp = malloc(sizeof(*adr_tcp));
     memset(adr_tcp, 0,sizeof(*adr_tcp));
     adr_tcp->sin6_family = AF_INET6;
@@ -101,7 +101,7 @@ int send_message_2(int sockfd, const uint16_t msg){
     ssize_t bytes_sent = 0;
     ssize_t r;
     while(bytes_sent < 2){
-        r = send(sockfd, msg + bytes_sent , sizeof(msg) - bytes_sent, 0);
+        r = send(sockfd, &msg + bytes_sent , sizeof(msg) - bytes_sent, 0);
         if (r== -1) {
             perror("Error while sending client message ");
             return 1;

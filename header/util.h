@@ -23,6 +23,9 @@
 #define ADDR_GAME ""
 #define PORT_PRINCIPAL 2024
 
+typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
+
+
 typedef struct Game Game;
 typedef struct Player Player;
 

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "../header/util.h"
+#include "../header/board.h"
 
 void setup_board(board* board) {
     int lines; int columns;
@@ -126,7 +127,7 @@ bool perform_action(board* b, pos* p, ACTION a) {
     return false;
 }
 
-int main545454()
+int main()
 {
     board* b = malloc(sizeof(board));;
     line* l = malloc(sizeof(line));

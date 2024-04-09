@@ -127,7 +127,7 @@ bool perform_action(board* b, pos* p, ACTION a) {
     return false;
 }
 
-int main()
+int main545454()
 {
     board* b = malloc(sizeof(board));;
     line* l = malloc(sizeof(line));

@@ -1,11 +1,5 @@
 #include "../header/server.h"
-#include "../header/util.h"
-#include "../header/servanswer.h"
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <net/if.h>
-#include <limits.h>
+
 
 #define H 20
 #define W 20
@@ -21,8 +15,8 @@ typedef struct Arguments Args;
 
 struct Argsurveillants{
   int *winner;
-  pthread_t **tab;
-  pthread_mutex_t **tabmutext;
+  pthread_t *tab;
+  pthread_mutex_t *tabmutext;
   pthread_cond_t *condvic;
   pthread_mutex_t *vicmutex;
   Player **plys;
@@ -88,9 +82,9 @@ void *surveiller(void *args){
     total+=nbr;
    }
 
-    pthread_mutex_lock(arg->tabmutext[i]);
+    pthread_mutex_lock(&arg->tabmutext[i]);
     close(arg->plys[i]->sockcom);
-    pthread_mutex_unlock(arg->tabmutext[i]);
+    pthread_mutex_unlock(&arg->tabmutext[i]);
   }
 }
 
@@ -435,7 +429,7 @@ void *handlingRequest1(void *args)
           {
             if (!games_equipes[p2]->thread)
             {
-              if (pthread_create(&(games_equipes[p2]->thread), NULL, server_game, games_equipes[p2] < 0) < 0)
+              if (pthread_create(&(games_equipes[p2]->thread), NULL, server_game, games_equipes[p2] ) < 0)
               {
                 err(-1, "probleme de creation threads");
               }
@@ -544,4 +538,8 @@ int main_serveur()
 
 void free_player(Player p)
 {
+}
+
+int main(int argc,char **argv){
+  if(argc>=2) main_serveur();
 }

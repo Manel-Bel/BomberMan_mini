@@ -16,7 +16,7 @@ typedef struct {
     uint16_t entete; // Code de la requête
     uint16_t port_udp;       // Identifiant du joueur
     uint16_t port_diff;
-    char adr[16];       // 
+    struct in6_addr adr;       // 
 } ServerMessage22;
 
 

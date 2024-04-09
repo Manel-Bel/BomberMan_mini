@@ -166,7 +166,7 @@ ServerMessage22 *extract_msg(void *buf){
 }
 
 void print_ServerMessage22(const ServerMessage22* msg){
-	char buf[16];
+	char buf[INET6_ADDRSTRLEN];
     printf("\n-------------------------------\n");
     printf("En-tête : %d \n", msg -> entete);
     printf("Port UDP : %d \n", msg -> port_udp);

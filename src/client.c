@@ -166,7 +166,7 @@ ServerMessage22 *extract_msg(void *buf){
 }
 
 void print_ServerMessage22(const ServerMessage22* msg){
-	char buf[16];
+	char buf[INET6_ADDRSTRLEN];
     printf("\n-------------------------------\n");
     printf("En-tête : %d \n", msg -> entete);
     printf("Port UDP : %d \n", msg -> port_udp);
@@ -232,7 +232,7 @@ int init_udp_adr(const ServerMessage22* player_data, int *sock_udp, struct socka
     addr_udp->sin6_port = htons(player_data->port_udp);
     printf("avant palyer adr");
     //inet_pton(AF_INET6, player_data->adr, &addr_udp->sin6_addr);
-    addr_udp->sin6_addr = player_data->adr;
+    memcpy(&addr_udp->sin6_addr,&player_data->adr,sizeof(player_data->adr));
     return  0;
 }
 

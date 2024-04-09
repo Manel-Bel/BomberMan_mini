@@ -146,7 +146,9 @@ void *server_game(void *args)
   int n = 0;
 
   /*prepare ports for udp */
+  printf("generer POrt 1 avant\n ");
   int port_udp = genePort();
+  printf("generer port 1 apres \n");
   /* preparer socket pour UDP*/
   int sock_udp = socket(PF_INET6, SOCK_DGRAM, 0);
   if (sock_udp < 0)
@@ -177,7 +179,9 @@ void *server_game(void *args)
   }
   /*prepare IPv6 for multicast*/
   struct in6_addr adr;
+  printf("generer Port avant\n");
   int port_mdiff=genePort();
+  printf("generer port apres\n");
   generateAdrMultidiff(&adr);
 
   /*prepare adresse for multicast */
@@ -538,6 +542,8 @@ int main_serveur()
     pthread_mutex_lock(&vnbr);
     *nbr += 1;
     pthread_mutex_unlock(&vnbr);
+    nbrconnexion+=1;
+    printf("nbr de connexion %d\n",nbrconnexion);
   }
 }
 

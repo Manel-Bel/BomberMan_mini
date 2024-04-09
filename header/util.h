@@ -20,7 +20,7 @@
 #include <pthread.h>
 #include <netinet/in.h>
 
-#define ADDR_GAME ""
+#define ADDR_GAME "::1"
 #define PORT_PRINCIPAL 2024
 
 typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;

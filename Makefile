@@ -1,9 +1,9 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -g
 SRC_DIR = src
-OBJ_DIR = bin
+OBJ_DIR = .
 INCLUDE_DIR = header
-TARGET = client
+TARGET = server
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 INC = -I$(INCLUDE_DIR)

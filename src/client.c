@@ -1,7 +1,7 @@
 #include "../header/client.h"
 
 
-int main(int argc, char const *argv[]){
+int main55(int argc, char const *argv[]){
 
     int socket_tcp;
     struct sockaddr_in6 adr_tcp;

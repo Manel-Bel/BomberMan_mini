@@ -3,6 +3,7 @@
 
 #define H 20
 #define W 20
+#define nbrply 2
 
 struct Arguments
 {
@@ -66,7 +67,7 @@ void *surveiller(void *args){
   }
   pthread_mutex_unlock(arg->vicmutex);
 
-  for(size_t i=0;i<4;i++){
+  for(size_t i=0;i<nbrply;i++){
    char *msg;
    if(arg->plys[i]->id!=winner){
     msg="PERDU\n";
@@ -126,7 +127,7 @@ Game *initpartie(char mode)
 /*retourne 1 si l'ajout est reussi ,0 sinon*/
 int addplayerInGame(Game *p, Player *pl)
 {
-  if (p->nbplys >= 4)
+  if (p->nbplys >= nbrply)
   {
     return 0;
   }
@@ -168,7 +169,6 @@ void *server_game(void *args)
 
   /*prepare port for  multicast */
 
-  int port_diff = genePort();
   /*prepare socket for  multicast */
   int sockdiff = socket(PF_INET6, SOCK_DGRAM, 0);
   if (sockdiff < 0)
@@ -177,25 +177,26 @@ void *server_game(void *args)
   }
   /*prepare IPv6 for multicast*/
   struct in6_addr adr;
+  int port_mdiff=genePort();
   generateAdrMultidiff(&adr);
 
   /*prepare adresse for multicast */
   struct sockaddr_in6 grvadr;
   memset(&grvadr, 0, sizeof(grvadr));
   grvadr.sin6_family = AF_INET6;
-  generateAdrMultidiff(&grvadr.sin6_addr);
-  grvadr.sin6_port = htons(genePort());
+  grvadr.sin6_addr=adr;
+  grvadr.sin6_port = htons(port_mdiff);
   int ifindex = if_nametoindex("eth0");
 
-  int task_done[4] = {0};
+  int task_done[nbrply] = {0};
 
   /* send init info to clients*/
-  while (n < 4)
+  while (n < nbrply)
   {
     fd_set wset;
     FD_ZERO(&wset);
     int sockmax = 0;
-    for (size_t i = 0; i < 4; i++)
+    for (size_t i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
       sockmax = (sock > sockmax) ? sock : sockmax;
@@ -205,7 +206,7 @@ void *server_game(void *args)
 
     /* send player info*/
 
-    for (size_t i = 0; i < 4; i++)
+    for (size_t i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
       g->plys[i]->id = i;
@@ -213,7 +214,7 @@ void *server_game(void *args)
 
       if (FD_ISSET(sock, &wset) && !task_done[i])
       {
-        sendPlayerInfo(g->plys[i], g->mode, grvadr.sin6_addr);
+        sendPlayerInfo(g->plys[i], g->mode, grvadr.sin6_addr,port_udp,port_mdiff);
       }
       n += 1;
     }
@@ -221,19 +222,19 @@ void *server_game(void *args)
 
   /* waiting for sign of ready of players*/
   n = 0;
-  while (n < 4)
+  while (n < nbrply)
   {
     fd_set rset;
     FD_ZERO(&rset);
     int sockmax = 0;
-    for (size_t i = 0; i < 4; i++)
+    for (size_t i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
       sockmax = (sock > sockmax) ? sock : sockmax;
       FD_SET(sock, &rset);
     }
     select(sockmax + 1, 0, &rset, 0, NULL);
-    for (size_t i = 0; i < 4; i++)
+    for (size_t i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
       if (FD_ISSET(sock, &rset) && !g->plys[i]->Ready)
@@ -250,8 +251,8 @@ void *server_game(void *args)
   /* START GAME IF EVERYONE IS READY
   One thread for everyone and one thread for surveillant
   */
-  pthread_t tab[4];
-  pthread_mutex_t mutexstats[4];
+  pthread_t tab[nbrply];
+  pthread_mutex_t mutexstats[nbrply];
   pthread_t surveillant;
 
   int **board=createBoard();
@@ -261,7 +262,7 @@ void *server_game(void *args)
   *(winner) = __INT_MAX__;
   pthread_cond_t condwin=PTHREAD_COND_INITIALIZER;
   pthread_mutex_t vicmutex=PTHREAD_MUTEX_INITIALIZER;
-  for (size_t i = 0; i < 4; i++)
+  for (size_t i = 0; i < nbrply; i++)
   {
     pthread_mutex_init(mutexstats+i,NULL);
     g->plys[i]->lockstats=mutexstats+i;
@@ -303,7 +304,7 @@ void *server_game(void *args)
 
   
 
-  for (size_t i = 0; i < 4; i++)
+  for (size_t i = 0; i < nbrply; i++)
   {
     pthread_join(tab[i], NULL);
   }
@@ -415,7 +416,7 @@ void *handlingRequest1(void *args)
           *(ag->nbr) -= 1;
           pthread_mutex_unlock(ag->vtab);
 
-          if (games_4p[p1]->nbplys == 4)
+          if (games_4p[p1]!=NULL && games_4p[p1]->nbplys == nbrply)
           {
             if (!games_4p[p1]->thread)
             {
@@ -425,7 +426,7 @@ void *handlingRequest1(void *args)
               }
             }
           }
-          if (games_equipes[p2]->nbplys == 4)
+          if (games_equipes[p2]!=NULL  && games_equipes[p2]->nbplys == nbrply)
           {
             if (!games_equipes[p2]->thread)
             {
@@ -503,6 +504,7 @@ int main_serveur()
 
   /* acceptation de connexion et integration de partie */
   int pos = 0;
+  int nbrconnexion=0;
   while (1)
   {
 
@@ -540,6 +542,6 @@ void free_player(Player p)
 {
 }
 
-int main555(int argc,char **argv){
+int main(int argc,char **argv){
   if(argc>=2) main_serveur();
 }

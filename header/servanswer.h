@@ -15,7 +15,7 @@ struct Answer_Integ
   int16_t entete;
   int16_t PORTUDP;
   int16_t PORTMDIFF;
-  struct in6_addr ADDRDIFF;
+  char ADDRDIFF[16];
 };
 typedef struct Answer_Integ An_In;
 
@@ -32,7 +32,7 @@ void generateAdrMultidiff(struct in6_addr *addr);
 //comprise entre FF12:: et FF12:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF
 
 
-void sendPlayerInfo(Player *p,int mode,struct in6_addr add);
+void sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
 int  recvRequestReady(int sock,char mode);
 
 

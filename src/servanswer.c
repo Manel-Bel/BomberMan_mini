@@ -1,6 +1,7 @@
 #include "../header/servanswer.h"
 
 int usedport[1024]={0};
+int nbr=0;
 
 
 
@@ -9,7 +10,7 @@ int usedport[1024]={0};
 int researchPort(int port)
 {
   int i;
-  for (i = 0; usedport[i] != 0; i++)
+  for (i = 0; i<nbr; i++)
   {
     if (usedport[i] == port)
     {
@@ -36,6 +37,7 @@ int genePort()
     if (!(i = researchPort(newport)))
     {
       usedport[i] = newport;
+      nbr++;
       return newport;
     }
   }
@@ -67,21 +69,21 @@ void generateAdrMultidiff(struct in6_addr *addr)
     strcat(ADDR, tmp);
   }
  // printf("\n");
- // printf("adresse generer %s\n", ADDR);
+  printf("adresse generer %s\n", ADDR);
   close(fd);
   inet_pton(AF_INET6, ADDR, addr);
 }
 
-void sendPlayerInfo(Player *p,int mode,struct in6_addr add){
+void sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff){
 
     /* fill player */
     p->addr_mdiff=add;
-    p->port_udp=genePort();
-    p->port_mdifff=genePort();
+    p->port_udp=port_udp;
+    p->port_mdifff=port_mdiff;
 
     /*send answer*/
     An_In an;
-    an.ADDRDIFF=add;
+    memcpy(&an.ADDRDIFF,&add,sizeof(add));
     an.entete=htons((mode+8)<<3 | (p->id<<1) | p->idEq);
     an.PORTUDP=htons(p->port_udp);
     an.PORTMDIFF=htons(p->port_mdifff);
@@ -112,7 +114,7 @@ int  recvRequestReady(int sock,char mode){
     totaloctet+=nbr;
   }
   uint16_t h=ntohs(an.entete);
-  int codeReq=(h>>3)&8191; // ou 8191 = 2^13 -1
+  int codeReq=(h>>3)&8191; // ou 8191 = (1111...11)2 (13 fois 1)
   if(codeReq==mode+2 && codeReq<=4 && codeReq>2){
     return 1;
   }

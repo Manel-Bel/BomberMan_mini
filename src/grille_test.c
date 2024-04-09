@@ -42,7 +42,7 @@ void print_grille(int **grille) {
     }
 }
 
-int main() {
+int main5555() {
     int **grille = malloc(H * sizeof(int*));
     for (int i = 0; i < H; i++) {
         grille[i] = malloc(W * sizeof(int));

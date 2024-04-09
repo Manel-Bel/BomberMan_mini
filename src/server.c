@@ -540,6 +540,6 @@ void free_player(Player p)
 {
 }
 
-int main(int argc,char **argv){
+int main555(int argc,char **argv){
   if(argc>=2) main_serveur();
 }

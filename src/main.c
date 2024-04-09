@@ -4,8 +4,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
+#include "../header/util.h"
 
 void setup_board(board* board) {
     int lines; int columns;

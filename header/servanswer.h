@@ -1,7 +1,9 @@
 #ifndef SERVANSWER_H
 #define SERVANSWER_H
-#include "util.h"
 #include "server.h"
+
+
+
 
 struct Answer{
   int16_t entete;

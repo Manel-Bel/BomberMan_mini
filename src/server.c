@@ -475,6 +475,9 @@ int main_serveur()
   if (r < 0)
     perror("reutilisation de port impossible");
 
+  r=bind(sock,(struct sockaddr *)&address_sock,sizeof(address_sock));
+  if(r<0) perror("bind problem");
+
   r = listen(sock, 0);
   if (r < 0)
   {

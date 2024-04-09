@@ -80,7 +80,7 @@ int connect_to_server(int *sockfd, struct sockaddr_in6 *adr_tcp){
         return 1;
     }
     if(adr_tcp = NULL)
-        malloc(sizeof(*adr_tcp));
+       adr_tcp = malloc(sizeof(*adr_tcp));
     memset(adr_tcp, 0,sizeof(*adr_tcp));
     adr_tcp->sin6_family = AF_INET6;
     adr_tcp->sin6_port = htons(PORT_PRINCIPAL);
@@ -199,7 +199,7 @@ int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct soc
 int init_udp_adr(const ServerMessage22* player_data, int *sock_udp, struct sockaddr_in6 *addr_udp){
 
     // Initialiser la socket UDP
-    if ((*sockfd_udp = socket(AF_INET6, SOCK_DGRAM, 0)) == -1) {
+    if ((*sock_udp = socket(AF_INET6, SOCK_DGRAM, 0)) == -1) {
         perror("Error while creating the UDP socket");
         return 1;
     }
@@ -207,7 +207,7 @@ int init_udp_adr(const ServerMessage22* player_data, int *sock_udp, struct socka
         addr_udp = malloc(sizeof(struct sockaddr_in6));
     if(addr_udp == NULL){
         perror("Malloc fail for init addr_udp");
-        close(*sockfd_udp);
+        close(*sock_udp);
         return 1;
     }
 
@@ -233,7 +233,7 @@ void receive_chat_message(int socket_tcp){
     ssize_t r;
     ssize_t total = 0;
     ChatMessage  msg;
-    while(total < ?){
+    while(total < 2){
         if((r = recv(socket_tcp, &msg, sizeof(msg), 0)) < 0) {
                 perror("recv");
                 break;
@@ -242,7 +242,7 @@ void receive_chat_message(int socket_tcp){
             perror( "Connection closed by remote server");
             break;
         }
-        totale += r;
+        total += r;
     }
     msg.codereq_id_eq = ntohs(msg.codereq_id_eq);
     msg.len = ntohs(msg.len);

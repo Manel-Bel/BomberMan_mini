@@ -8,7 +8,8 @@
 #include <unistd.h>
 #include <sys/types.h> 
 #include <sys/socket.h>
-// #include <arpa/inet.h>
+#include <arpa/inet.h>
+#include <net/if.h>
 #include "util.h"
 
 #define MAX_MESSAGE_LENGTH 1024
@@ -40,6 +41,7 @@ ServerMessage22* receive_info(int sockfd);
 ServerMessage22 *extract_msg(void *buf);
 void print_ServerMessage22(const ServerMessage22* msg);
 int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct sockaddr_in6 *adr);
+int init_udp_adr(const ServerMessage22* player_data, int *sock_udp, struct sockaddr_in6 *addr_udp);
 void receive_chat_message(int socket_tcp);
 void receive_game_data(int soket_upd);
 int send_action(int socket_upd,const ServerMessage22* player_data,struct sockaddr_in6 *addr_udp);

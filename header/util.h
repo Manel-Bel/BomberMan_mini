@@ -20,7 +20,7 @@
 #include <pthread.h>
 #include <netinet/in.h>
 
-#define ADDR_GAME 
+#define ADDR_GAME ""
 #define PORT_PRINCIPAL 2024
 
 typedef struct Game Game;

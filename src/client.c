@@ -48,15 +48,19 @@ int main(int argc, char const *argv[]){
     subscribe_multicast(socket_udp,player_data, &addr_recv_multicast);
 
 
-    printf("are you ready to start the game ?");
+    printf("are you ready to start the game ?\n");
+    fflush(stdin);
     rep = getchar();
 
-    // Extraction du champ codereq (12 bits de poids fort)
-    uint16_t codereq = (player_data->entete >> 4) & 0xFFF;
+    // Extraction du champ codereq (13 bits de poids fort)
+    uint16_t codereq = player_data->entete >> 3;
+    printf("main: codereq de server %d\n",codereq);
     // Extraction du champ id (2 bits suivants)
     uint16_t id = (player_data->entete >> 1) & 0x3;
+    printf("main: id %d\n",id);
     // Extraction du champ eq (bit de poids faible)
     uint16_t eq = player_data->entete & 0x1;
+    printf("main: eq %d\n",eq);
 
     // Création de la partie entête du message de 2 octets
     if(codereq == 9){ //partie solo
@@ -64,12 +68,16 @@ int main(int argc, char const *argv[]){
     }else{
         codereq = 4 << 3;
     }
-    uint16_t header_2bytes = codereq | (id << 1) | eq;
-
+    uint16_t header_2bytes = htons(codereq | (id << 1) | eq);
+	
     //tell the server i am ready to play  
     send_message_2(socket_tcp,header_2bytes);
-
-
+    printf("je crois debut de la partie\n");
+    //un thread en background qui attend la grille puis affiche
+    //un thread d'ation en udp
+    // while recv de tcp
+// puis test si codereq >= 15 
+//
     
 
 
@@ -121,7 +129,7 @@ int send_message_2(int sockfd, const uint16_t msg){
 ServerMessage22* receive_info(int sockfd){
     int r;
     int totale = 0;
-    void *msg = malloc(22);
+    ServerMessage22 *msg = malloc(sizeof(ServerMessage22));
     if(msg == NULL){
         perror("malloc msg");
         return  NULL;
@@ -138,7 +146,7 @@ ServerMessage22* receive_info(int sockfd){
         totale += r;
     }
     printf("totale de recv info %d\n",totale);
-    ServerMessage22 * v = extract_msg(msg);
+    ServerMessage22 *v = extract_msg(msg);
     free(msg);
     return v ;
 }
@@ -158,10 +166,11 @@ ServerMessage22 *extract_msg(void *buf){
 	*/
     memcpy(msg,buf,sizeof(ServerMessage22));
     //convert 
+
     msg->entete = ntohs(msg->entete);
     msg->port_udp = ntohs(msg->port_udp);
     msg->port_diff = ntohs(msg->port_diff);
-	printf("apres extract\n");
+    printf("apres extract\n");
     return msg;
 }
 
@@ -180,7 +189,7 @@ void print_ServerMessage22(const ServerMessage22* msg){
 int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct sockaddr_in6 *adr ){
 
     /* Initialisation de l'adresse de reception */
-    memset(&adr, 0, sizeof(*adr));
+    memset(adr, 0, sizeof(*adr));
     adr->sin6_family = AF_INET6;
     adr->sin6_addr = in6addr_any;
     adr->sin6_port = htons(player_data->port_diff);
@@ -232,7 +241,8 @@ int init_udp_adr(const ServerMessage22* player_data, int *sock_udp, struct socka
     addr_udp->sin6_port = htons(player_data->port_udp);
     printf("avant palyer adr");
     //inet_pton(AF_INET6, player_data->adr, &addr_udp->sin6_addr);
-    addr_udp->sin6_addr = player_data->adr;
+    //addr_udp->sin6_addr = player_data->adr;
+    memcpy(&addr_udp->sin6_addr,&(player_data->adr),sizeof(player_data->adr));
     return  0;
 }
 

@@ -228,9 +228,11 @@ void *server_game(void *args)
   n = 0;
   while (n < nbrply)
   {
+	  printf("entrer dans select_n");
     fd_set rset;
     FD_ZERO(&rset);
     int sockmax = 0;
+    printf("recuperer les socks clients\n");
     for (size_t i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
@@ -241,8 +243,10 @@ void *server_game(void *args)
     for (size_t i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
+      printf("verifie si plyas est resay\n");
       if (FD_ISSET(sock, &rset) && !g->plys[i]->Ready)
       {
+	printf("recuperer le message plys\n");
         g->plys[i]->Ready = recvRequestReady(sock, g->mode);
         if (g->plys[i])
         {
@@ -398,7 +402,8 @@ void *handlingRequest1(void *args)
           request = ntohs(request);
 
           // Lecture des données
-          int16_t CODEREQ = request >> 3;
+         uint16_t CODEREQ = request >> 3;
+	 printf("codereq recu %d dans HAndlingREquest1 \n",CODEREQ);
 
           int is_4p = (CODEREQ == 1) ? 1 : 0;
 

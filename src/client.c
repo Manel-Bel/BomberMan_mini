@@ -1,7 +1,7 @@
 #include "../header/client.h"
 
 
-int main55(int argc, char const *argv[]){
+int main55555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555555(int argc, char const *argv[]){
 
     int socket_tcp;
     struct sockaddr_in6 adr_tcp;
@@ -180,7 +180,7 @@ void print_ServerMessage22(const ServerMessage22* msg){
 int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct sockaddr_in6 *adr ){
 
     /* Initialisation de l'adresse de reception */
-    memset(&adr, 0, sizeof(*adr));
+    memset(adr, 0, sizeof(adr));
     adr->sin6_family = AF_INET6;
     adr->sin6_addr = in6addr_any;
     adr->sin6_port = htons(player_data->port_diff);

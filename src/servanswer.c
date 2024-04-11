@@ -107,7 +107,10 @@ void sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port
     /*send answer*/
     An_In an;
     memcpy(&an.ADDRDIFF,&add,sizeof(add));
+    printf("coreq envoyé est %d\n",mode+8);
+  
     an.entete=htons((mode+8)<<3 | (p->id<<1) | p->idEq);
+    printf("an.entete %d\n",ntohs(an.entete));
     an.PORTUDP=htons(p->port_udp);
     an.PORTMDIFF=htons(p->port_mdifff);
     int totaloctet=0;
@@ -130,14 +133,19 @@ int  recvRequestReady(int sock,char mode){
   int totaloctet=0;
   while(totaloctet<sizeof(Answer)){
     int nbr=recv(sock,&an,sizeof(Answer),0);
-    if(nbr<=0){
+    if(nbr<0){
       close(sock);
-      err(-1,"recv problem in recvRequestReady");
+      err(1,"recv problem in recvRequestReady");
+    }
+    if(nbr==0){
+	perror("client closed his socket");
+	exit(1);
     }
     totaloctet+=nbr;
   }
   uint16_t h=ntohs(an.entete);
-  int codeReq=(h>>3)&8191; // ou 8191 = (1111...11)2 (13 fois 1)
+  uint16_t codeReq=(h>>3)&0xFFFF; 
+  printf("recu %d dans recvRequestReady\n",codeReq);
   if(codeReq==mode+2 && codeReq<=4 && codeReq>2){
     return 1;
   }

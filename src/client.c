@@ -5,16 +5,19 @@ int main(int argc, char const *argv[]){
 
     int socket_tcp;
     struct sockaddr_in6 adr_tcp;
-    connect_to_server(&socket_tcp, &adr_tcp);
+    if(connect_to_server(&socket_tcp, &adr_tcp) == 1) return 1;
+    printf("the socket is %d\n",socket_tcp);
     char rep;
     printf("Ready to connect to the new game ?y /n\n");
 	rep = getchar();
-    
+   fflush(stdin); 
     printf("which partie do you want to play ?: s for solo game else will be in a group  of two\n");
     rep =' ';
     do{
-        printf("\n Enter the response : \n");
-        scanf("%c",&rep);
+        printf("Enter the response : \n");
+        fflush(stdin);
+	scanf(" %c",&rep);
+	fflush(stdin);
     } while (((rep!='s' && rep !='S')&&(rep != 'g' && rep!= 'G')) );
 
     uint16_t *msg=malloc(2);
@@ -24,10 +27,14 @@ int main(int argc, char const *argv[]){
     } else {
         *msg= 2 << 3; // Mode groupe de deux
     }
+    printf("msg %d\n",*msg);
     *msg = htons(*msg); //big indian format 
-
+	printf("msg %d\n",*msg);
     //send a request to join a game 
-    send_message_2(socket_tcp, *msg);
+    if(send_message_2(socket_tcp, *msg) == 1){
+	    perror("send dans main");
+	    return 1;
+    }
 
     ServerMessage22* player_data = receive_info(socket_tcp); 
     print_ServerMessage22(player_data);
@@ -119,8 +126,8 @@ ServerMessage22* receive_info(int sockfd){
         perror("malloc msg");
         return  NULL;
     }
-    while(totale < 22){;
-        if((r = recv(sockfd, msg + totale, 22 - totale, 0)) < 0) {
+    while(totale < sizeof(ServerMessage22)){
+        if((r = recv(sockfd, msg + totale, sizeof(ServerMessage22) - totale, 0)) < 0) {
             perror("recv");
             break;
         }
@@ -130,6 +137,7 @@ ServerMessage22* receive_info(int sockfd){
         }
         totale += r;
     }
+    printf("totale de recv info %d\n",totale);
     ServerMessage22 * v = extract_msg(msg);
     free(msg);
     return v ;
@@ -143,26 +151,30 @@ ServerMessage22 *extract_msg(void *buf){
     }
 
     // Extraction des données du message
-    memcpy(&(msg->entete), buf, sizeof(uint16_t));
+    /*memcpy(&(msg->entete), buf, sizeof(uint16_t));
     memcpy(&(msg->port_udp), buf + sizeof(uint16_t), sizeof(uint16_t));
     memcpy(&(msg->port_diff), buf + 2 * sizeof(uint16_t), sizeof(uint16_t));
-    memcpy(msg->adr, buf + 3 * sizeof(uint16_t), 16);
-
+    memcpy(&(msg->adr), buf + 3 * sizeof(uint16_t), sizeof(struct in6_addr));
+	*/
+    memcpy(msg,buf,sizeof(ServerMessage22));
     //convert 
     msg->entete = ntohs(msg->entete);
     msg->port_udp = ntohs(msg->port_udp);
     msg->port_diff = ntohs(msg->port_diff);
-
+	printf("apres extract\n");
     return msg;
 }
 
 void print_ServerMessage22(const ServerMessage22* msg){
+	char buf[INET6_ADDRSTRLEN];
     printf("\n-------------------------------\n");
     printf("En-tête : %d \n", msg -> entete);
     printf("Port UDP : %d \n", msg -> port_udp);
     printf("Port de diffusion : %d \n", msg -> port_diff);
-    printf("Adresse IP : %s \n", msg -> adr);
-    printf("------------------------------- \n\n");
+	inet_ntop(AF_INET6,&(msg -> adr),buf,INET6_ADDRSTRLEN);
+		    printf("Adresse IP : %s \n", buf);
+    printf("-------------------------------\n");
+    printf("fin print msg\n");
 }
 
 int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct sockaddr_in6 *adr ){
@@ -186,7 +198,9 @@ int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct soc
 
     /* s'abonner au groupe multicast */
     struct ipv6_mreq group;
-    inet_pton (AF_INET6, player_data->adr, &group.ipv6mr_multiaddr.s6_addr);
+    //inet_pton (AF_INET6, player_data->adr, &group.ipv6mr_multiaddr.s6_addr);
+    //group.ipv6mr_multiaddr.s6_addr = player_data->adr;
+    memcpy(&group.ipv6mr_multiaddr.s6_addr, &(player_data->adr), 16);
     group.ipv6mr_interface = ifindex;
     if(setsockopt(socket_udp, IPPROTO_IPV6, IPV6_JOIN_GROUP, &group, sizeof group) < 0) {
         perror("echec de abonnement groupe");
@@ -199,6 +213,7 @@ int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct soc
 int init_udp_adr(const ServerMessage22* player_data, int *sock_udp, struct sockaddr_in6 *addr_udp){
 
     // Initialiser la socket UDP
+    printf("debut init udp \n");
     if ((*sock_udp = socket(AF_INET6, SOCK_DGRAM, 0)) == -1) {
         perror("Error while creating the UDP socket");
         return 1;
@@ -210,12 +225,14 @@ int init_udp_adr(const ServerMessage22* player_data, int *sock_udp, struct socka
         close(*sock_udp);
         return 1;
     }
-
+	printf("avant init adr udp mais dans ofnc \n");
     // Configurer l'adresse du serveur
     memset(addr_udp, 0, sizeof(*addr_udp));
     addr_udp->sin6_family = AF_INET6;
     addr_udp->sin6_port = htons(player_data->port_udp);
-    inet_pton(AF_INET6, player_data->adr, &addr_udp->sin6_addr);
+    printf("avant palyer adr");
+    //inet_pton(AF_INET6, player_data->adr, &addr_udp->sin6_addr);
+    memcpy(&addr_udp->sin6_addr,&player_data->adr,sizeof(player_data->adr));
     return  0;
 }
 

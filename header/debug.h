@@ -3,6 +3,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-void debug_print(const char *format, ...);
+void debug_printf(const char *format, ...);
 
 #endif

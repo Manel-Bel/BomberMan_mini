@@ -1,8 +1,8 @@
 #include "../header/debug.h"
 
 //print the formated messages if DEBUG=1
-void debug_print(const char *format, ...){
-    #ifdef DEBUG
+void debug_printf(const char *format, ...){
+    // #ifdef DEBUG
         char buf[50];
         va_list args; 
         va_start(args,format);
@@ -10,5 +10,5 @@ void debug_print(const char *format, ...){
         va_end(args);
         
         printf("Debug : %s.\n",buf);
-    #endif
+    // #endif
 }

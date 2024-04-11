@@ -8,9 +8,9 @@
 #include <arpa/inet.h>
 #include <net/if.h>
 #include "util.h"
+#include "board.h"
 
-#define MAX_MESSAGE_LENGTH 1024
-
+#define GRID_SIZE 400
 
 typedef struct {
     uint16_t entete; // Code de la requête
@@ -21,26 +21,38 @@ typedef struct {
 
 
 typedef struct {
-    uint16_t codereq_id_eq; // Codereq, ID et EQ
-    uint16_t num_action; // Numéro du message modulo 2^13 et action
+    uint16_t codereq_id_eq;
+    uint16_t num_action; //Num du msg mod 2^13 et action
 } Action_msg;
 
 typedef struct{
     uint16_t codereq_id_eq;
     uint8_t len;
-    char data[MAX_MESSAGE_LENGTH];
 }ChatMessage;
 
+typedef struct{
+    uint16_t codereq_id_eq;
+    uint16_t num;
+    uint8_t height;
+    uint8_t width;
+    uint8_t grid[GRID_SIZE];
+}GameData;
+
+typedef struct ThreadArgs{
+    int socket;
+}ThreadArgs;
+
 //initialize the socket
-int connect_to_server(int *sockfd, struct sockaddr_in6 *adr_tcp);
-int send_message_2(int sockfd, const uint16_t msg);
-ServerMessage22* receive_info(int sockfd);
+int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp);
+int send_message_2(int socket_tcp, const uint16_t msg);
 ServerMessage22 *extract_msg(void *buf);
+ServerMessage22* receive_info(int socket_tcp);
 void print_ServerMessage22(const ServerMessage22* msg);
-int subscribe_multicast(int socket_udp, ServerMessage22 *player_data, struct sockaddr_in6 *adr);
-int init_udp_adr(const ServerMessage22* player_data, int *sock_udp, struct sockaddr_in6 *addr_udp);
-void receive_chat_message(int socket_tcp);
-void receive_game_data(int soket_upd);
-int send_action(int socket_upd,const ServerMessage22* player_data,struct sockaddr_in6 *addr_udp);
+int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr)
+int init_udp_adr(int *sock_udp, const ServerMessage22* player_data, struct sockaddr_in6 *addr_udp);
+int send_chat_message(int socket_tcp);
+int receive_chat_message(int socket_tcp);
+void *receive_game_data_thread(void *args);
+int send_action_udp(int socket_upd,const ServerMessage22* player_data,struct sockaddr_in6 *addr_udp);
 
 #endif 

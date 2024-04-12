@@ -2,7 +2,7 @@
 
 
 
-int main(int argc, char const *argv[]){
+int main55(int argc, char const *argv[]){
 
 
     int socket_tcp;

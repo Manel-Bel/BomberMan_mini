@@ -32,7 +32,7 @@ void generateAdrMultidiff(struct in6_addr *addr);
 //comprise entre FF12:: et FF12:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF
 
 
-void sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
+int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
 int  recvRequestReady(int sock,char mode);
 
 

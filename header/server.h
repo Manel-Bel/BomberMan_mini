@@ -11,7 +11,12 @@
 
 
 
-void free_player(Player p);
+void sendTCPtoALL(Game *g, void *buf, int sizebuff);
+void *send_freqBoard(void *args);
+
+
+
+void free_player(Player *p);
 
 
 

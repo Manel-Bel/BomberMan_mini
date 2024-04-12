@@ -97,12 +97,12 @@ void generateAdrMultidiff(struct in6_addr *addr)
   inet_pton(AF_INET6, ADDR, addr);
 }
 
-void sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff){
+int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff){
 
     /* fill player */
-    p->addr_mdiff=add;
-    p->port_udp=port_udp;
-    p->port_mdifff=port_mdiff;
+    //p->addr_mdiff=add;
+    //p->port_udp=port_udp;
+    //p->port_mdifff=port_mdiff;
 
     /*send answer*/
     An_In an;
@@ -111,16 +111,19 @@ void sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port
   
     an.entete=htons((mode+8)<<3 | (p->id<<1) | p->idEq);
     printf("an.entete %d\n",ntohs(an.entete));
-    an.PORTUDP=htons(p->port_udp);
-    an.PORTMDIFF=htons(p->port_mdifff);
+    an.PORTUDP=htons(port_udp);
+    an.PORTMDIFF=htons(port_mdiff);
     int totaloctet=0;
     while(totaloctet<sizeof(an)){
         int nbr=send(p->sockcom,&an,sizeof(an),0);
         if(nbr<=0){
-            err(-1,"problem of send");
+            perror("problem of send in sendPlayerInfo");
+            return 1;
         }
         totaloctet+=nbr;
     }
+
+    return 0;
     
     
 
@@ -152,6 +155,9 @@ int  recvRequestReady(int sock,char mode){
   return 0;
 
 }
+
+
+
 
 
 

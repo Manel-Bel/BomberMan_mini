@@ -3,3 +3,6 @@
 myprogram
 bin/
 .*
+main
+client
+server

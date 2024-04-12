@@ -36,7 +36,7 @@ void refresh_game(board* b, line* l) {
             switch (get_grid(b,x,y)) {
                 case 0:
                     c = ' ';
-                    break;
+    :                break;
                 case 1:
                     c = 'O';
                     break;
@@ -131,9 +131,9 @@ int main666()
 {
     board* b = malloc(sizeof(board));;
     line* l = malloc(sizeof(line));
-    l->cursor = 0;
+    l->cursor = 5;
     pos* p = malloc(sizeof(pos));
-    p->x = 0; p->y = 0;
+    p->x = 10; p->y = 10;
 
     // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
     initscr(); /* Start curses mode */

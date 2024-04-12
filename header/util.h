@@ -19,7 +19,7 @@
 #include <err.h>
 #include <pthread.h>
 #include <netinet/in.h>
-
+#include "debug.h"
 
 #define ADDR_GAME "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
 #define PORT_PRINCIPAL 2024

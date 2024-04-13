@@ -1,8 +1,8 @@
 *.o
 *.out
+*.exe
 myprogram
 bin/
-.*
 main
 client
 server

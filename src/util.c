@@ -7,7 +7,7 @@
 #include "../header/util.h"
 #include "../header/board.h"
 
-void setup_board(board* board) {
+void setup_board(Board* board) {
     int lines; int columns;
     getmaxyx(stdscr,lines,columns);
     board->h = lines - 2 - 1; // 2 rows reserved for border, 1 row for chat
@@ -15,19 +15,19 @@ void setup_board(board* board) {
     board->grid = calloc((board->w)*(board->h),sizeof(char));
 }
 
-void free_board(board* board) {
+void free_board(Board* board) {
     free(board->grid);
 }
 
-int get_grid(board* b, int x, int y) {
+int get_grid(Board* b, int x, int y) {
     return b->grid[y*b->w + x];
 }
 
-void set_grid(board* b, int x, int y, int v) {
+void set_grid(Board* b, int x, int y, int v) {
     b->grid[y*b->w + x] = v;
 }
 
-void refresh_game(board* b, line* l) {
+void refresh_game(Board* b, Line* l) {
     // Update grid
     int x,y;
     for (y = 0; y < b->h; y++) {
@@ -36,7 +36,7 @@ void refresh_game(board* b, line* l) {
             switch (get_grid(b,x,y)) {
                 case 0:
                     c = ' ';
-    :                break;
+                   break;
                 case 1:
                     c = 'O';
                     break;
@@ -69,7 +69,7 @@ void refresh_game(board* b, line* l) {
     refresh(); // Apply the changes to the terminal
 }
 
-ACTION control(line* l) {
+ACTION control(Line* l) {
     int c;
     int prev_c = ERR;
     // We consume all similar consecutive key presses
@@ -104,7 +104,7 @@ ACTION control(line* l) {
     return a;
 }
 
-bool perform_action(board* b, pos* p, ACTION a) {
+bool perform_action(Board* b, Pos* p, ACTION a) {
     int xd = 0;
     int yd = 0;
     switch (a) {
@@ -129,10 +129,10 @@ bool perform_action(board* b, pos* p, ACTION a) {
 
 int main666()
 {
-    board* b = malloc(sizeof(board));;
-    line* l = malloc(sizeof(line));
+    Board* b = malloc(sizeof(b));;
+    Line* l = malloc(sizeof(l));
     l->cursor = 5;
-    pos* p = malloc(sizeof(pos));
+    Pos* p = malloc(sizeof(p));
     p->x = 10; p->y = 10;
 
     // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.

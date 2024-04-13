@@ -3,21 +3,22 @@
 
 #define TEXT_SIZE 255
 
-typedef struct board {
-    char* grid;
-    int w;
-    int h;
-} board;
+typedef struct Board {
+    uint8_t h;
+    uint8_t w;
+    uint8_t* grid;
+} Board;
 
-typedef struct line {
+typedef struct Line {
     char data[TEXT_SIZE];
     int cursor;
-} line;
+} Line;
 
-typedef struct pos {
-    int x;
-    int y;
-} pos;
+typedef struct Pos{
+    uint8_t x;
+    uint8_t y;
+
+} Pos;
 
 
 

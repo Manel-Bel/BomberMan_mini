@@ -7,8 +7,8 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <net/if.h>
+#include <ncurses.h>
 #include "util.h"
-#include "board.h"
 
 #define GRID_SIZE 400
 
@@ -28,18 +28,20 @@ typedef struct {
 typedef struct{
     uint16_t codereq_id_eq;
     uint8_t len;
+    char * data;
 }ChatMessage;
 
 typedef struct{
     uint16_t codereq_id_eq;
     uint16_t num;
-    uint8_t height;
-    uint8_t width;
-    uint8_t grid[GRID_SIZE];
+    Board board;
 }GameData;
 
-typedef struct ThreadArgs{
+typedef struct {
     int socket;
+    ServerMessage22* player_data;
+    Board *board;
+    Line *line;
 }ThreadArgs;
 
 //initialize the socket
@@ -48,11 +50,12 @@ int send_message_2(int socket_tcp, const uint16_t msg);
 ServerMessage22 *extract_msg(void *buf);
 ServerMessage22* receive_info(int socket_tcp);
 void print_ServerMessage22(const ServerMessage22* msg);
-int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr)
+int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr);
 int init_udp_adr(int *sock_udp, const ServerMessage22* player_data, struct sockaddr_in6 *addr_udp);
-int send_chat_message(int socket_tcp);
-int receive_chat_message(int socket_tcp);
+int send_chat_message(const ThreadArgs * args);
+void *receive_chat_message(void * arg);
 void *receive_game_data_thread(void *args);
-int send_action_udp(int socket_upd,const ServerMessage22* player_data,struct sockaddr_in6 *addr_udp);
+int send_action_udp(const ThreadArgs* thread, ACTION action);
+void *input_thread(void * arg);
 
 #endif 

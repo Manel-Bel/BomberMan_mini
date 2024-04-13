@@ -19,7 +19,9 @@
 #include <err.h>
 #include <pthread.h>
 #include <netinet/in.h>
+#include <stdbool.h>
 #include "debug.h"
+#include "board.h"
 
 #define ADDR_GAME "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
 #define PORT_PRINCIPAL 2024
@@ -55,6 +57,12 @@ struct Game{
   char mode; // game mode, 1: 4p , 2 : equipes;
 };
 
-
+void setup_board(Board* board);
+void free_board(Board* board);
+int get_grid(Board* b, int x, int y);
+void set_grid(Board* b, int x, int y, int v) ;
+void refresh_game(Board* b, Line* l);
+ACTION control(Line* l);
+bool perform_action(Board* b, Pos* p, ACTION a);
 
 #endif

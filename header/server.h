@@ -13,6 +13,7 @@
 
 void sendTCPtoALL(Game *g, void *buf, int sizebuff);
 void *send_freqBoard(void *args);
+int estGagne(int mode,Game *g);
 
 
 

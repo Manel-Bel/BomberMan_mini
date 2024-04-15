@@ -10,7 +10,6 @@ struct Arguments
   int *socks;
   int *nbr;
   pthread_mutex_t *vtab;
-  pthread_mutex_t *vnbr;
   int *threadstatus;
 };
 typedef struct Arguments Args;
@@ -24,6 +23,7 @@ struct Argsurveillants
   pthread_mutex_t *vicmutex;
   Player **plys;
   char mode;
+  int statusthread;
 };
 typedef struct Argsurveillants argsurv;
 
@@ -33,20 +33,8 @@ struct Request
 };
 typedef struct Request Request;
 
-struct Request_action
-{
-  uint16_t entete;
-  uint16_t action;
-};
-typedef struct Request Request;
 
-struct Request_tchat
-{
-  uint16_t entete;
-  unsigned char LEN;
-  char *DATA;
-};
-typedef struct Request Request;
+
 
 struct answerBoard
 {
@@ -484,9 +472,8 @@ void sendTCPtoALL(Game *g, void *buf, int sizebuff)
   }
 }
 
-void *hanglingTchat(void *args)
+void hanglingTchat(Game *g)
 {
-  Game *g = (Game *)args;
 
   void *buf = malloc(1500);
   memset(buf,0 , 1500);
@@ -580,9 +567,8 @@ finish:
   return 0;
 }
 
-void *handling_Action_Request(void *args)
+void handling_Action_Request(Game * g)
 {
-  Game *g = (Game *)args;
   void *buf = malloc(4);
 
   struct sockaddr_in6 servaddr;
@@ -696,6 +682,31 @@ int waitingforReadySign(Game *g)
 }
 
 
+int estGagne(int mode,Game *g){
+  if(g->nbplys==1){
+    return 1;
+
+  }else{
+    if(g->nbplys==2 && g->mode==2){
+      int idsurv=-1;
+      for(size_t i=0;i<nbrply;i++){
+        if(idsurv==-1 && g->plys[i]->stat==0){
+          idsurv=g->plys[i]->idEq;
+        }
+        if(idsurv!=-1 &&g->plys[i]->stat==0){
+          if(idsurv!=g->plys[i]->idEq){
+            return 0;
+          }
+        }
+      }
+      return 1;
+    }
+  }
+  return 0;
+
+}
+
+
 
 void *server_game(void *args)
 {
@@ -707,7 +718,7 @@ void *server_game(void *args)
   int n = 0;
 
   /*prepare ports for udp */
-  printf("generer POrt 1 avant\n ");
+  printf("generer Port 1 avant\n ");
   int port_udp = genePort();
   printf("generer port 1 apres \n");
   /* preparer socket pour UDP*/
@@ -803,7 +814,8 @@ void *server_game(void *args)
   pthread_mutex_t mutexstats[nbrply];
   pthread_t surveillant;
   pthread_t thread_tchat;
-/*
+
+
   for (size_t i = 0; i < nbrply; i++)
   {
     pthread_mutex_init(mutexstats + i, NULL);
@@ -812,23 +824,16 @@ void *server_game(void *args)
     g->plys[i]->condwin = &condwin;
     g->plys[i]->vicmutex = &vicmutex;
 
-    if (g->mode == 1)
-    {
-      if (pthread_create(&tab[i], NULL, game_4p, g->plys[i]) < 0)
+    
+      if (pthread_create(&tab[i], NULL, hanglingTchat, g->plys[i]) < 0)
       {
         perror( "problem of creation pthread");
         return NULL;
       }
-    }
-    else
-    {
-      if (pthread_create(&tab[i], NULL, handling_Action_Request, g->plys[i])<0)
-      {
-        perror( "problem of creation pthrea");
-        return NULL;
-      }
-    }
-  }*/
+    
+    
+  }
+
 
   // create le thread surveillant
   argsurv argsurvs;
@@ -839,6 +844,8 @@ void *server_game(void *args)
   argsurvs.winner = winner;
   argsurvs.vicmutex = &vicmutex;
   argsurvs.mode = g->mode;
+  argsurvs.statusthread=INT_MAX;
+
 
   if (pthread_create(&surveillant, NULL, surveiller, &argsurvs) < 0)
   {
@@ -850,6 +857,21 @@ void *server_game(void *args)
     perror( "problem de phtread_create");
     return NULL;
   }
+
+
+
+
+  while(1){
+
+    //si le surveillant est encore active alors on continue de traiter les demandes actions 
+    if(argsurvs.statusthread != INT_MAX){
+      break;
+    }
+    handling_Action_Request(g);
+   
+  }
+
+  
 
   pthread_join(surveillant, NULL);
 
@@ -879,6 +901,45 @@ void addPlayerInGames(Game **games, int *pos, Player *pl, char mode)
   }
 }
 
+int sendTCP(int sock,void *buf,int size){
+  int total=0;
+
+  while(total<size){
+    int nbr=send(sock,buf+total,size-total,0);
+    if(nbr<0){
+      perror("send error in sendTCP");
+      return 1;
+    }
+    if(nbr==0){
+      perror("connexion fermé client in sendTCP");
+      return 1;
+
+    }
+    total+=nbr;
+  }
+
+}
+
+int recvTCP(int sock,void *buf,int size){
+
+  int total=0;
+
+  while(total<size){
+    int nbr=recv(sock,buf+total,size,0);
+    if(nbr<0){
+      perror("recv error in recvTCP");
+      return 1;
+    }
+    if(nbr==0){
+      perror("connexion fermé client in sendTCP");
+      return 1;
+
+    }
+    total+=nbr;
+  }
+
+}
+
 void *handlingRequest1(void *args)
 {
   Args *ag = (Args *)(args);
@@ -899,9 +960,9 @@ void *handlingRequest1(void *args)
     fd_set rset;
     FD_ZERO(&rset);
 
-    pthread_mutex_lock(ag->vnbr);
+    pthread_mutex_lock(ag->vtab);
     int len = *(ag->nbr);
-    pthread_mutex_unlock(ag->vnbr);
+    pthread_mutex_unlock(ag->vtab);
     int sockmax = 0;
     for (size_t i = 0; i < len; i++)
     {
@@ -922,21 +983,8 @@ void *handlingRequest1(void *args)
 
           /*  recevoir le premier message et integrer le joueur dans une partie*/
           uint16_t request;
-          size_t byterecv = 0;
-          size_t bytetotalrecv = 0;
-
-          while (bytetotalrecv < sizeof(int16_t))
-          {
-            byterecv = recv(sockclient, (&request) + bytetotalrecv, sizeof(int16_t), 0);
-
-            if (byterecv <= 0)
-            {
-              perror("recv eror in hanglingRequest1");
-              goto error;
-            }
-
-            bytetotalrecv += byterecv;
-          }
+          recvTCP(sockclient,&request,2);
+          
           // convertir BE en LE
           request = ntohs(request);
 
@@ -949,14 +997,20 @@ void *handlingRequest1(void *args)
           Player *pl = initplayer(sockclient);
 
           // integrer le player dans une partie
-          if (is_4p)
+          if (is_4p )
           {
-            addPlayerInGames(games_4p, &p1, pl, 1);
+            if(p1<size){
+              addPlayerInGames(games_4p, &p1, pl, 1);
+            }else{
+              printf("plus de place pour mode 4p\n");
+            }
           }
           else
           {
-            addPlayerInGames(games_equipes, &p2, pl, 2);
+            if(p2<size) addPlayerInGames(games_equipes, &p2, pl, 2);
+            else printf("plus de place pour mode equipes \n");
           }
+          if( p2>=size && p1>=size) break;
 
           pthread_mutex_lock(ag->vtab);
           memcpy(ag->socks + i, ag->socks + i + 1, 1024 - i - 1);
@@ -995,12 +1049,25 @@ void *handlingRequest1(void *args)
       sleep(1);
     }
   }
+
+
+
+for (int i=0;i<p1;i++){
+  pthread_join(games_4p[i]->thread,NULL);
+}
+for (int i=0;i<p1;i++){
+  pthread_join(games_equipes[i]->thread,NULL);
+}
+
+
 error:
   free_games(games_equipes, p2);
   free_games(games_4p, p1);
   *ag->threadstatus = 1;
   free(args);
   return NULL;
+
+
 }
 
 /* thread principal qui accepte que les demandes de connexion*/
@@ -1052,12 +1119,10 @@ int main_serveur()
   int *socks = malloc(sizeof(int) * 1024);
   int *nbr = malloc(sizeof(int));
   pthread_mutex_t vsocks = PTHREAD_MUTEX_INITIALIZER;
-  pthread_mutex_t vnbr = PTHREAD_MUTEX_INITIALIZER;
 
   Args *arg = malloc(sizeof(Args));
   arg->socks = socks;
   arg->nbr = nbr;
-  arg->vnbr = &vnbr;
   arg->vtab = &vsocks;
 
   /*lancement de thread de traitement de messages*/
@@ -1098,11 +1163,10 @@ int main_serveur()
     pthread_mutex_lock(&vsocks);
     pos = (*nbr);
     socks[pos] = sockclient;
+    (*nbr)+=1;
     pthread_mutex_unlock(&vsocks);
 
-    pthread_mutex_lock(&vnbr);
-    *nbr += 1;
-    pthread_mutex_unlock(&vnbr);
+   
     nbrconnexion += 1;
     printf("nbr de connexion %d\n", nbrconnexion);
 
@@ -1116,7 +1180,6 @@ error:
   free(nbr);
   free(socks);
   pthread_mutex_destroy(&vsocks);
-  pthread_mutex_destroy(&vnbr);
   return 1;
 }
 

@@ -38,6 +38,8 @@ struct Action_Request{
 
 };typedef struct Action_Request A_R;
 
+
+
 struct Player{
     int id;  // id player
     int idEq; // id equipes si en mode equipes

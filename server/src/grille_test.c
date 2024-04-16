@@ -43,8 +43,11 @@ void print_grille(char **grille) {
 }
 
 void print_grille_1D(char *grille){
+
+    printf("imprimer grille \n");
     for (int i = 0; i < H; i++) {
         for (int j = 0; j < W; j++) {
+            //printf("numero case à imprimer %d\n",H*i+j);
             switch (grille[H*i+j]) {
                 case 0:
                     printf(". "); // Espace ouvert

@@ -42,7 +42,7 @@ struct answerBoard
   uint16_t num;
   uint8_t hauteur;
   uint8_t largeur;
-  char board[H * W];
+  char board[400];
 };
 typedef struct answerBoard An_Board;
 
@@ -105,7 +105,7 @@ void copie_table(char *board, char *board1)
 
 void *surveiller(void *args)
 {
-  argsurv *arg = (argsurv *)arg;
+  argsurv *arg = (argsurv *)args;
   int winner;
   pthread_mutex_lock(arg->vicmutex);
   if (*(arg->winner) == __INT_MAX__)
@@ -212,14 +212,17 @@ void *sendCompleteBoard(void *args)
     pthread_mutex_unlock(g->mutexboard);
     printf("grillle en 1 D apres copie \n");
     print_grille_1D(an.board);
+
     copie_table(g->board,g->lastmultiboard);
-    int r = sendto(g->sock_mdiff, &an, sizeof(an), 0, (struct sockaddr *)&g, sizeof(g->addr_mdiff));
+
+    int r = sendto(g->sock_mdiff, &an, sizeof(an), 0, (struct sockaddr *)&g->addr_mdiff, sizeof(g->addr_mdiff));
     if (r <= 0)
     {
       perror("probleme de sento in sendCompleteBoard");
       return NULL;
     }
     n++;
+    printf("envoi de grille complet \n");
 
     sleep(1);
   }
@@ -356,12 +359,12 @@ void *send_freqBoard(void *args)
       int moved = 0;
       int bombered = 0;
 
-      for (size_t j = len; j >= 0; j--)
+      for (size_t j = 0; j<len; j++)
       {
         if (!moved || !bombered)
         {
 
-          switch (tabaction[j].action)
+          switch (tabaction[len-j-1].action)
           {
           case 1:
           case 2:
@@ -376,7 +379,7 @@ void *send_freqBoard(void *args)
           case 5:
             if (!moved)
             {
-              cancellastmove(tabaction, j);
+              cancellastmove(tabaction, len-j-1);
               j++;
             }
           default:
@@ -472,7 +475,7 @@ void sendTCPtoALL(Game *g, void *buf, int sizebuff)
   }
 }
 
-void hanglingTchat(Game *g)
+void *hanglingTchat(Game *g)
 {
 
   void *buf = malloc(1500);
@@ -723,6 +726,7 @@ void *server_game(void *args)
   printf("generer port 1 apres \n");
   /* preparer socket pour UDP*/
   int sock_udp = socket(PF_INET6, SOCK_DGRAM, 0);
+  printf("sock_udp %d \n",sock_udp);
   if (sock_udp < 0)
   {
     perror("creation sock_udp");
@@ -751,10 +755,19 @@ void *server_game(void *args)
 
   /*prepare socket for  multicast */
   int sockdiff = socket(PF_INET6, SOCK_DGRAM, 0);
+  printf("socket multi %d \n",sockdiff);
   if (sockdiff < 0)
   {
     err(1, "creation sockdiff");
   }
+
+  ok=1;
+  if(setsockopt(sockdiff,SOL_SOCKET,SO_REUSEADDR,&ok,sizeof(ok))<0){
+        perror("echec de SO_REUSSEADDR");
+        close(sock_udp);
+        return NULL;
+  }
+  
   /*prepare IPv6 for multicast*/
   struct in6_addr adr;
   printf("generer Port avant\n");
@@ -777,14 +790,18 @@ void *server_game(void *args)
 
   int *winner = malloc(sizeof(int));
   *(winner) = __INT_MAX__;
-  pthread_cond_t condwin = PTHREAD_COND_INITIALIZER;
-  pthread_mutex_t vicmutex = PTHREAD_MUTEX_INITIALIZER;
+  pthread_cond_t *condwin=malloc(sizeof(pthread_cond_t));
+  pthread_cond_init(condwin,NULL);
+  pthread_mutex_t *vicmutex=malloc(sizeof(pthread_mutex_t));
+  pthread_mutex_init(vicmutex,NULL);
 
   g->addr_mdiff = grvadr;
   g->port_mdifff = port_mdiff;
   g->port_udp = port_udp;
   g->board = board;
   g->mutexboard = &vboard;
+  g->sock_mdiff=sockdiff;
+  g->sock_udp=sock_udp;
 
   /* send init info to clients*/
   sendinitInfo(g);
@@ -823,40 +840,45 @@ void *server_game(void *args)
     g->plys[i]->winner = winner;
     g->plys[i]->condwin = &condwin;
     g->plys[i]->vicmutex = &vicmutex;
+    memset(g->plys[i]->tabAction,0,20);
+    g->plys[i]->len=0;
 
     
-      if (pthread_create(&tab[i], NULL, hanglingTchat, g->plys[i]) < 0)
+     /* if (pthread_create(&tab[i], NULL, hanglingTchat, g) < 0)
       {
         perror( "problem of creation pthread");
         return NULL;
       }
     
-    
+    */
   }
 
 
   // create le thread surveillant
-  argsurv argsurvs;
-  argsurvs.plys = g->plys;
-  argsurvs.tab = tab;
-  argsurvs.condvic = &condwin;
+  argsurv *argsurvs=malloc(sizeof(argsurv));
+  argsurvs->plys = g->plys;
+  argsurvs->tab = tab;
+  argsurvs->condvic = condwin;
   //argsurvs.tabmutext = mutexstats;
-  argsurvs.winner = winner;
-  argsurvs.vicmutex = &vicmutex;
-  argsurvs.mode = g->mode;
-  argsurvs.statusthread=INT_MAX;
+  argsurvs->winner = winner;
+  argsurvs->vicmutex = vicmutex;
+  argsurvs->mode = g->mode;
+  argsurvs->statusthread=INT_MAX;
+  printf("arg pointeur %p \n",argsurvs);
+  
 
-
-  if (pthread_create(&surveillant, NULL, surveiller, &argsurvs) < 0)
+  if (pthread_create(&surveillant, NULL, surveiller, argsurvs) < 0)
   {
     perror( "problem de phtread_create");
     return NULL;
   }
+  /*
   if (pthread_create(&thread_tchat, NULL, hanglingTchat, g) < 0)
   {
     perror( "problem de phtread_create");
     return NULL;
   }
+  */
 
 
 
@@ -864,7 +886,7 @@ void *server_game(void *args)
   while(1){
 
     //si le surveillant est encore active alors on continue de traiter les demandes actions 
-    if(argsurvs.statusthread != INT_MAX){
+    if(argsurvs->statusthread != INT_MAX){
       break;
     }
     handling_Action_Request(g);
@@ -1019,10 +1041,11 @@ void *handlingRequest1(void *args)
 
           /* apres l'ajout on teste si une partie est remplie si oui on lance le thread de partie*/
 
-          if (games_4p[p1] != NULL && games_4p[p1]->nbplys == nbrply)
+          if (games_4p[p1] != NULL && games_4p[p1]->nbplys == nbrply )
           {
             if (!games_4p[p1]->thread)
             {
+              printf("pthread games 4p lancer\n");
               if (pthread_create(&(games_4p[p1]->thread), NULL, server_game, games_4p[p1]) < 0)
               {
                 perror("probleme de creation threads");
@@ -1030,10 +1053,11 @@ void *handlingRequest1(void *args)
               }
             }
           }
-          if (games_equipes[p2] != NULL && games_equipes[p2]->nbplys == nbrply)
+          if (games_equipes[p2] != NULL && games_equipes[p2]->nbplys == nbrply )
           {
             if (!games_equipes[p2]->thread)
             {
+              printf("pthread games equipes lancer\n");
               if (pthread_create(&(games_equipes[p2]->thread), NULL, server_game, games_equipes[p2]) < 0)
               {
                 perror("probleme de creation threads");

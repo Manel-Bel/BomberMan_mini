@@ -7,7 +7,7 @@ TARGET = server
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRCS))
 INC = -I$(INCLUDE_DIR)
-LIBS = -lncurses
+LIBS = -lncurses -pthread
 
 .PHONY: all clean
 

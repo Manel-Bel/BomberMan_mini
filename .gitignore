@@ -6,3 +6,4 @@ bin/
 main
 client
 server
+.vscode

@@ -11,7 +11,13 @@
 
 
 
-void free_player(Player p);
+void sendTCPtoALL(Game *g, void *buf, int sizebuff);
+void *send_freqBoard(void *args);
+int estGagne(int mode,Game *g);
+
+
+
+void free_player(Player *p);
 
 
 

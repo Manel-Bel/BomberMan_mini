@@ -214,6 +214,8 @@ int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_dat
     adr->sin6_family = AF_INET6;
     adr->sin6_addr = in6addr_any;
     adr->sin6_port = htons(player_data->port_diff);
+    int optval = 1;
+    setsockopt(*socket_multidiff, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
     if(bind(*socket_multidiff, (struct sockaddr*) adr, sizeof(*adr))) {
         perror("echec de bind");
@@ -378,8 +380,8 @@ void *receive_game_data_thread(void *args){
                 printf("NUM: %u\n", gamedata.num);
                 break;
             }
-            perror("Error on recv for game data");
-            continue; 
+            perror("Error on recv for game datafirst time ");
+            break; 
         }
     }
     // read either freq or the whole grid

@@ -49,6 +49,7 @@ typedef struct {
     ServerMessage22* player_data;
     Board *board;
     Line *line;
+    struct sockaddr_in6 *addr_udp;
 }ThreadArgs;
 
 //initialize the socket

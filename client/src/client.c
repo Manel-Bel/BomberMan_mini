@@ -93,7 +93,7 @@ int main(int argc, char const *argv[]){
         goto end;
     }
     //TO DO un thread d'action en udp
-    ThreadArgs argsInput = {.socket = socket_udp, .player_data = player_data ,.board = board,.line=line};
+    ThreadArgs argsInput = {.socket = socket_udp, .player_data = player_data ,.board = board,.line=line,.addr_udp = &addr_udp };
     if(pthread_create(&threads[1], NULL, input_thread,&argsInput) != 0){
         perror("Erreur creating thread for input ");
         goto end;
@@ -478,7 +478,7 @@ int send_action_udp(const ThreadArgs* thread, ACTION action) {
     int num_msg = 2;
     msg.num_action = htons(num_msg << 3 | action);
 
-    ssize_t bytes_sent = send(thread->socket, &msg, sizeof(msg), 0);
+    ssize_t bytes_sent = sendto(thread->socket, &msg, sizeof(msg), 0, (struct sockaddr*)(thread->addr_udp), sizeof(*(thread->addr_udp)));
     if (bytes_sent <= 0) {
         perror("Error while sending action in UDP");
         return 1;

@@ -4,6 +4,7 @@
 void setup_board(Board* board) {
     int lines; int columns;
     getmaxyx(stdscr,lines,columns);
+    debug_printf("ligne %d, colonne %d", lines, columns);
     board->h = lines - 2 - 1; // 2 rows reserved for border, 1 row for chat
     board->w = columns - 2; // 2 columns reserved for border
     board->grid = calloc((board->w)*(board->h),sizeof(char));

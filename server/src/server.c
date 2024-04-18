@@ -224,7 +224,7 @@ void *sendCompleteBoard(void *args)
     n++;
     printf("envoi de grille complet \n");
 
-    sleep(1);
+    sleep(3);
   }
   return NULL;
 }

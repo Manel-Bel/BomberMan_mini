@@ -2,7 +2,9 @@
 
 
 int main(int argc, char const *argv[]){
-    int socket_tcp;
+    
+	freopen("erreurs.txt", "a", stderr);
+	int socket_tcp;
     struct sockaddr_in6 adr_tcp;
     if(connect_to_server(&socket_tcp, &adr_tcp) == 1) return 1;
     debug_printf("the socket is %d\n",socket_tcp);
@@ -75,16 +77,16 @@ int main(int argc, char const *argv[]){
     Line * line = malloc(sizeof(Line));
 
     // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
-    initscr(); /* Start curses mode */
-    raw(); /* Disable line buffering */
-    intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
-    keypad(stdscr, TRUE); /* Required in order to get events from keyboard */
-    nodelay(stdscr, TRUE); /* Make getch non-blocking */
-    noecho(); /* Don't echo() while we do getch (we will manually print characters when relevant) */
-    curs_set(0); // Set the cursor to invisible
-    start_color(); // Enable colors
-    init_pair(1, COLOR_YELLOW, COLOR_BLACK); // Define a new color style (text is yellow, background is black)
-
+    initscr(); 
+    raw(); 
+    intrflush(stdscr, FALSE);
+    keypad(stdscr, TRUE);
+    nodelay(stdscr, TRUE); 
+    noecho(); 
+    curs_set(0); 
+    start_color();
+    init_pair(1, COLOR_YELLOW, COLOR_BLACK); 
+    
     //TODO un thread en background qui attend la grille puis affiche
     ThreadArgs argsGame = {.socket = socket_multidiff, .player_data = player_data ,.board=board,.line=line};
     pthread_t threads[3];
@@ -374,6 +376,7 @@ void *receive_game_data_thread(void *args){
                 //extract the board portion 
                 int offset = 4;
                 thread->board->h = (uint8_t)buf[offset];
+		fprintf(stderr,"thread->board->h %d\n",thread->board->h );
                 thread->board->w = (uint8_t)buf[offset+1];
                 offset += 2; 
 
@@ -456,7 +459,7 @@ void *input_thread(void * arg){
                 break;
             case '~':
                 send_action_udp(thread, QUIT);
-                break;
+                goto end;
             case '\n': 
                 send_chat_message(thread);
                 break;
@@ -465,8 +468,10 @@ void *input_thread(void * arg){
                     thread->line->data[(thread->line->cursor)++] = prev_c;
                 break;
         }
+	usleep(30*1000);
     }
-    pthread_exit(NULL);
+	end: 
+    		pthread_exit(NULL);
 }
 
 int send_action_udp(const ThreadArgs* thread, ACTION action) {

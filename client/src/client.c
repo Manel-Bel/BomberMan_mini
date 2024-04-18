@@ -5,7 +5,7 @@ int main(int argc, char const *argv[]){
     int socket_tcp;
     struct sockaddr_in6 adr_tcp;
     if(connect_to_server(&socket_tcp, &adr_tcp) == 1) return 1;
-    printf("the socket is %d\n",socket_tcp);
+    debug_printf("the socket is %d\n",socket_tcp);
     char rep;
     printf("Ready to connect to the new game ?y /n\n");
     fflush(stdin); 
@@ -74,8 +74,19 @@ int main(int argc, char const *argv[]){
     Board * board = malloc(sizeof(Board));
     Line * line = malloc(sizeof(Line));
 
+    // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
+    initscr(); /* Start curses mode */
+    raw(); /* Disable line buffering */
+    intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
+    keypad(stdscr, TRUE); /* Required in order to get events from keyboard */
+    nodelay(stdscr, TRUE); /* Make getch non-blocking */
+    noecho(); /* Don't echo() while we do getch (we will manually print characters when relevant) */
+    curs_set(0); // Set the cursor to invisible
+    start_color(); // Enable colors
+    init_pair(1, COLOR_YELLOW, COLOR_BLACK); // Define a new color style (text is yellow, background is black)
+
     //TODO un thread en background qui attend la grille puis affiche
-    ThreadArgs argsGame = {.socket = socket_tcp, .player_data = player_data ,.board=board,.line=line};
+    ThreadArgs argsGame = {.socket = socket_multidiff, .player_data = player_data ,.board=board,.line=line};
     pthread_t threads[3];
     if(pthread_create(&threads[0], NULL, receive_game_data_thread,&argsGame) != 0){
         perror("Erreur creating thread");
@@ -167,7 +178,7 @@ ServerMessage22* receive_info(int socket_tcp){
         }
         totale += r;
     }
-    printf("totale de recv info %d\n",totale);
+    debug_printf("totale de recv info %d\n",totale);
     ServerMessage22 *v = extract_msg(msg);
     free(msg);
     return v ;
@@ -194,13 +205,13 @@ ServerMessage22 *extract_msg(void *buf){
 
 void print_ServerMessage22(const ServerMessage22* msg){
 	char buf[INET6_ADDRSTRLEN];
-    printf("\n-------------------------------\n");
-    printf("En-tête : %d \n", msg -> entete);
-    printf("Port UDP : %d \n", msg -> port_udp);
-    printf("Port de diffusion : %d \n", msg -> port_diff);
+    debug_printf("\n-------------------------------\n");
+    debug_printf("En-tête : %d \n", msg -> entete);
+    debug_printf("Port UDP : %d \n", msg -> port_udp);
+    debug_printf("Port de diffusion : %d \n", msg -> port_diff);
 	inet_ntop(AF_INET6,&(msg -> adr),buf,INET6_ADDRSTRLEN);
-	printf("Adresse IP : %s \n", buf);
-    printf("-------------------------------\n");
+	debug_printf("Adresse IP : %s \n", buf);
+    debug_printf("-------------------------------\n");
 }
 
 int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr){
@@ -334,9 +345,9 @@ void *receive_chat_message(void * arg){
         total += r;
     }
     // TODO PRINT THOSE CHAT MSG 
-    printf("Chat msg Received:\n");
-    printf("CODEREQ: %u ID: %u \n", msg.codereq_id_eq >> 3, (msg.codereq_id_eq >> 3) & 0x3); // Extrait le CODEREQ id
-    printf("EQ: %u LEN: %u DATA: %s \n", msg.codereq_id_eq & 0x1,msg.len, msg.data); // Extrait EQ
+    debug_printf("Chat msg Received:\n");
+    debug_printf("CODEREQ: %u ID: %u \n", msg.codereq_id_eq >> 3, (msg.codereq_id_eq >> 3) & 0x3); // Extrait le CODEREQ id
+    debug_printf("EQ: %u LEN: %u DATA: %s \n", msg.codereq_id_eq & 0x1,msg.len, msg.data); // Extrait EQ
     return NULL;
 }
 
@@ -354,7 +365,7 @@ void *receive_game_data_thread(void *args){
                 memcpy(&gamedata.codereq_id_eq, buf, sizeof(uint16_t));
                 gamedata.codereq_id_eq = ntohs(gamedata.codereq_id_eq);
 
-                if(gamedata.codereq_id_eq  == 3072) 
+                if(gamedata.codereq_id_eq  != 88) 
                     continue; //skip the first packet which is not a the whole grid 
 
                 memcpy(&gamedata.num, buf + sizeof(uint16_t), sizeof(uint16_t));
@@ -376,8 +387,10 @@ void *receive_game_data_thread(void *args){
                 // copy the data of the grid
                 memcpy(thread->board->grid, buf + offset, grid_len);
                 init_grid = true;
-                printf("CODEREQ_ID_EQ: %u\n", gamedata.codereq_id_eq);
-                printf("NUM: %u\n", gamedata.num);
+                setup_board(thread->board);
+                debug_printf("CODEREQ_ID_EQ: %u\n", gamedata.codereq_id_eq);
+                debug_printf("NUM: %u\n", gamedata.num);
+
                 break;
             }
             perror("Error on recv for game datafirst time ");
@@ -394,8 +407,9 @@ void *receive_game_data_thread(void *args){
         // extract the codereq to see if it's the whole grid or not
         uint16_t code_req;
         memcpy(&code_req, buf, sizeof(uint16_t));
+        code_req = ntohs(code_req);
         //check if it's the whole grid 
-        if(code_req  == 3072){
+        if(code_req  == 88){
             debug_printf("the whole grid");
             //TODO call func
             memcpy(thread->board->grid, buf+5, grid_len);

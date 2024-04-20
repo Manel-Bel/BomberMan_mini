@@ -5,7 +5,7 @@ void setup_board(Board* board) {
     int lines; int columns;
     getmaxyx(stdscr,lines,columns);
      fprintf(stderr,"ligne %d colonne %d\n",lines, columns);
-    board->h = lines - 2 - 1; // 2 rows reserved for border, 1 row for chat
+    board->h = lines - 2 - 2; // 2 rows reserved for border, 2 rows for chat
     board->w = columns - 2; // 2 columns reserved for border
     board->grid = calloc((board->w)*(board->h),sizeof(char));
 }
@@ -50,14 +50,22 @@ void refresh_game(Board* b, Line* l) {
         mvaddch(y, 0, '|');
         mvaddch(y, b->w+1, '|');
     }
+    // Draw chat area
+    for (y = b->h+2; y < b->h+4; y++) {
+        for (x = 0; x < b->w+2; x++) {
+            mvaddch(y, x, ' ');
+        }
+    }
+
     // Update chat text
     attron(COLOR_PAIR(1)); // Enable custom color 1
     attron(A_BOLD); // Enable bold
+    int chat_row = b->h+2;
     for (x = 0; x < b->w+2; x++) {
         if (x >= TEXT_SIZE || x >= l->cursor)
-            mvaddch(b->h+2, x, ' ');
+            mvaddch(chat_row, x, ' ');
         else
-            mvaddch(b->h+2, x, l->data[x]);
+            mvaddch(chat_row, x, l->data[x]);
     }
     attroff(A_BOLD); // Disable bold
     attroff(COLOR_PAIR(1)); // Disable custom color 1
@@ -124,10 +132,11 @@ bool perform_action(Board* b, Pos* p, ACTION a) {
 
 int main666()
 {
-    Board* b = malloc(sizeof(b));;
-    Line* l = malloc(sizeof(l));
-    l->cursor = 5;
-    Pos* p = malloc(sizeof(p));
+    Board* b = malloc(sizeof(Board));
+    Line* l = malloc(sizeof(Line));
+    l->cursor = 0;
+    memset(l->data, 0, TEXT_SIZE);// Initialize the text buffer
+    Pos* p = malloc(sizeof(Pos));
     p->x = 10; p->y = 10;
 
     // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
@@ -145,7 +154,7 @@ int main666()
     while (true) {
         ACTION a = control(l);
         if (perform_action(b, p, a)) break;
-        refresh_game(b,l);
+        refresh_game(b, l);
         usleep(30*1000);
     }
     free_board(b);

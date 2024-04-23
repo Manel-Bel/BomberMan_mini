@@ -21,23 +21,36 @@ int get_grid(Board* b, int x, int y) {
 void set_grid(Board* b, int x, int y, int v) {
     b->grid[y*b->w + x] = v;
 }
-
 void refresh_game(Board* b, Line* l) {
     // Update grid
     int x,y;
     for (y = 0; y < b->h; y++) {
         for (x = 0; x < b->w; x++) {
             char c;
-            switch (get_grid(b,x,y)) {
-                case 0:
-                    c = ' ';
-                   break;
-                case 1:
-                    c = 'O';
-                    break;
-                default:
-                    c = '?';
-                    break;
+            int value = get_grid(b,x,y);
+            if (value >= 5) {
+                c = value - 5 + '0'; // Display player ID
+            } else {
+                switch (value) {
+                    case 0:
+                        c = '.'; // Empty space
+                        break;
+                    case 1:
+                        c = '#'; // Indestructible wall
+                        break;
+                    case 2:
+                        c = '*'; // Destructible wall
+                        break;
+                    case 3:
+                        c = 'B'; // Bomb
+                        break;
+                    case 4:
+                        c = 'E'; // Exploded by bomb
+                        break;
+                    default:
+                        c = '?'; // Unknown character
+                        break;
+                }
             }
             mvaddch(y+1,x+1,c);
         }
@@ -71,6 +84,7 @@ void refresh_game(Board* b, Line* l) {
     attroff(COLOR_PAIR(1)); // Disable custom color 1
     refresh(); // Apply the changes to the terminal
 }
+
 
 ACTION control(Line* l) {
     int c;

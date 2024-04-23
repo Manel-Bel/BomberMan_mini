@@ -148,12 +148,16 @@ char *createBoard()
   return tmp;
 }
 
+
 Player *initplayer(int sock)
 {
   Player *p = malloc(sizeof(Player));
   p->sockcom = sock;
   p->Ready = 0;
   p->len = 0;
+
+  
+
   return p;
 }
 
@@ -164,8 +168,6 @@ Game *initgame(char mode)
   p->thread = 0;
   p->mode = mode;
   p->lastmultiboard = createBoard();
-
-  /* initialisation de la grille */
 
   return p;
 }
@@ -449,7 +451,8 @@ void sendTCPtoALL(Game *g, void *buf, int sizebuff)
     {
       int sock = g->plys[i]->sockcom;
       g->plys[i]->id = i;
-      g->plys[i]->idEq = (i < 2) ? 0 : 1;
+      g->plys[i]->idEq = (i < 2) ? 0 : 1; 
+      //equipe 0：player 0&1； equipe 1: player 2&3
 
       if (FD_ISSET(sock, &wset) && !task_done[i])
       {
@@ -709,6 +712,40 @@ int estGagne(int mode,Game *g){
 
 }
 
+void putPlayersOnBoard(Game *g) {
+  for (int i = 0; i < g->nbplys; i++) {
+    Player *player = g->plys[i];
+    
+    // Set initial positions based on player ID
+    switch (player->id) {
+      case 0:
+        player->pos[0] = 0; // Top left corner
+        player->pos[1] = 0;
+        break;
+      case 1:
+        player->pos[0] = W - 1; // Bottom right corner
+        player->pos[1] = H - 1;
+        break;
+      case 2:
+        player->pos[0] = 0; // Bottom left corner
+        player->pos[1] = H - 1;
+        break;
+      case 3:
+        player->pos[0] = W - 1; // Top right corner
+        player->pos[1] = 0;
+        break;
+      default:
+        // Handle error case
+        perror("Invalid player ID in putPlayersOnBoard");
+        return;
+    }
+    
+    // Mark player's position on the game board
+    int x = player->pos[0];
+    int y = player->pos[1];
+    g->board[y * W + x] = 5 + player->id;
+  }
+}
 
 
 void *server_game(void *args)
@@ -805,6 +842,9 @@ void *server_game(void *args)
 
   /* send init info to clients*/
   sendinitInfo(g);
+
+  /*put players on board*/
+  putPlayersOnBoard(g);
 
   /* waiting for sign of ready of players*/
   waitingforReadySign(g);

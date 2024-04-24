@@ -69,17 +69,34 @@ void print_grille_1D(char *grille){
     for (int i = 0; i < H; i++) {
         for (int j = 0; j < W; j++) {
             //printf("numero case à imprimer %d\n",H*i+j);
-            switch (grille[H*i+j]) {
-                case 0:
-                    printf(". "); // Espace ouvert
-                    break;
-                case 1:
-                    printf("# "); // Mur indestructible
-                    break;
-                case 2:
-                    printf("* "); // Mur destructible
-                    break;
-            }
+            int value = grille[H*i+j];
+            if (value >= 5) {
+                // c = value - 5 + '0'; // Display player ID
+                printf("%d ",value); // Display player ID
+            }else{
+                switch (value) {
+                    case 0:
+                        printf(". "); // Espace ouvert
+                        break;
+                    case 1:
+                        printf("# "); // Mur indestructible
+                        break;
+                    case 2:
+                        printf("* "); // Mur destructible
+                        break;
+                    case 3:
+                        // c = 'B'; // Bomb
+                        printf("B "); // Bomb
+                        break;
+                    case 4:
+                        // c = 'E'; // Exploded by bomb
+                        printf("E "); // Exploded by bomb
+                        break;
+                    default:
+                        // c = '?'; // Unknown character
+                        printf("? "); // Unknown character
+                        break;
+            }}
         }
         printf("\n");
     }

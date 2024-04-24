@@ -41,12 +41,12 @@ void refresh_game(Board* b, Line* l) {
                     case 2:
                         c = '*'; // Destructible wall
                         break;
-                    // case 3:
-                    //     c = 'B'; // Bomb
-                    //     break;
-                    // case 4:
-                    //     c = 'E'; // Exploded by bomb
-                    //     break;
+                    case 3:
+                        c = 'B'; // Bomb
+                        break;
+                    case 4:
+                        c = 'E'; // Exploded by bomb
+                        break;
                     default:
                         c = '?'; // Unknown character
                         break;

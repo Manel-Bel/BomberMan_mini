@@ -72,7 +72,7 @@ void print_grille_1D(char *grille){
             int value = grille[H*i+j];
             if (value >= 5) {
                 // c = value - 5 + '0'; // Display player ID
-                printf("%d ",value); // Display player ID
+                printf("%c ",value - 5 + '0'); // Display player ID
             }else{
                 switch (value) {
                     case 0:

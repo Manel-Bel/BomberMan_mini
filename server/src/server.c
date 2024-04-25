@@ -69,7 +69,7 @@ int serverUdp(int sock, int port)
     return 1;
   }
 
-  return 1;
+  return 0;
 }
 
 /* preparer le serverMultiCast et rempli adr. multicast dans le pointeur adr_mul
@@ -105,6 +105,9 @@ int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul)
 
   return 0;
 }
+
+
+
 
 void cancellastmove(A_R *tab, int size)
 {

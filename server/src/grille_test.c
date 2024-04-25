@@ -28,13 +28,13 @@ void print_grille(char **grille) {
         for (int j = 0; j < W; j++) {
             switch (grille[i][j]) {
                 case 0:
-                    printf(". "); // Espace ouvert
+                    printf("0 "); // Espace ouvert
                     break;
                 case 1:
-                    printf("# "); // Mur indestructible
+                    printf("1 "); // Mur indestructible
                     break;
                 case 2:
-                    printf("* "); // Mur destructible
+                    printf("2 "); // Mur destructible
                     break;
             }
         }
@@ -48,15 +48,15 @@ void print_grille_1D(char *grille){
     for (int i = 0; i < H; i++) {
         for (int j = 0; j < W; j++) {
             //printf("numero case à imprimer %d\n",H*i+j);
-            switch (grille[H*i+j]) {
+            switch (grille[W*i+j]) {
                 case 0:
-                    printf(". "); // Espace ouvert
+                    printf("0 "); // Espace ouvert
                     break;
                 case 1:
-                    printf("# "); // Mur indestructible
+                    printf("1 "); // Mur indestructible
                     break;
                 case 2:
-                    printf("* "); // Mur destructible
+                    printf("2 "); // Mur destructible
                     break;
             }
         }

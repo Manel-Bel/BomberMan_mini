@@ -41,5 +41,5 @@ void set_grid(Board* b, int x, int y, int v) ;
 void refresh_game(Board* b, Line* l);
 ACTION control(Line* l);
 bool perform_action(Board* b, Pos* p, ACTION a);
-
+void print_grille(Board * b) ;
 #endif

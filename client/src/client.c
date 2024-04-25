@@ -2,12 +2,14 @@
 
 int game_running = 1;
 int main(int argc, char const *argv[]){
-    int ter = open_new_ter();
+    int ter;
+   // = open_new_ter();
 
     int socket_tcp;
     struct sockaddr_in6 adr_tcp;
     Board * board = malloc(sizeof(Board));
     Line * line = malloc(sizeof(Line));
+    memset(line,'\0', sizeof(*line));
     int socket_udp;
     int socket_multidiff;
     struct sockaddr_in6 addr_udp;
@@ -135,7 +137,7 @@ int main(int argc, char const *argv[]){
 }
 
 int open_new_ter(){
-    int fd = open("/dev/pts/0", O_WRONLY);
+    int fd = open("/dev/pts/19", O_WRONLY);
     if(fd == -1){
         perror("Error while redirecting");
         return -1;
@@ -412,7 +414,7 @@ void *receive_game_data_thread(void *args){
                 thread->board->h = (uint8_t)buf[offset];
                 thread->board->w = (uint8_t)buf[offset+1];
                 offset += 2; 
-
+		fprintf(stderr,"h %u, l %u, suivant %u\n",buf[offset -2],buf[offset -1], buf[offset]); 
                 //allocate memory for the grid
                 grid_len = thread->board->h * thread->board->w;
                 thread->board->grid = malloc(grid_len);
@@ -424,7 +426,9 @@ void *receive_game_data_thread(void *args){
                 // copy the data of the grid
                 memcpy(thread->board->grid, buf + offset, grid_len);
                 init_grid = true;
-                setup_board(thread->board);
+		 print_grille(thread->board);
+
+                //setup_board(thread->board);
                 debug_printf("CODEREQ_ID_EQ: %u", gamedata.codereq_id_eq);
                 debug_printf("NUM: %u", gamedata.num);
                 break;
@@ -448,10 +452,11 @@ void *receive_game_data_thread(void *args){
         if(code_req  == 88){
             debug_printf("the whole grid");
             //TODO call func
-            memcpy(thread->board->grid, buf+5, grid_len);
+            memcpy(thread->board->grid, buf+6, grid_len);
+	     print_grille(thread->board);
             refresh_game(thread->board, thread->line);
         }else{
-            debug_printf("we received a freq of the grid");
+           // debug_printf("we received a freq of the grid");
             // we need to first extract the number of cells changed 
             uint8_t nb = buf[4];
             for(uint8_t i = 0; i < nb; i++){
@@ -491,9 +496,12 @@ void *receive_game_data_thread(void *args){
             case KEY_RIGHT:
                 r = send_action_udp(thread, RIGHT);
                 break;
-            case '~':
-                r = send_action_udp(thread, QUIT);
-                break;
+            case 'q':
+                
+		r = send_action_udp(thread, QUIT);
+                fprintf(stderr,"game endded\n");
+		r= -1;
+		break;
             case '\n': 
                 r = send_chat_message(thread);
                 break;

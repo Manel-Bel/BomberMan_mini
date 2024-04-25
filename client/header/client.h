@@ -65,5 +65,6 @@ void *receive_chat_message(void * arg);
 void *receive_game_data_thread(void *args);
 int send_action_udp(const ThreadArgs* thread, ACTION action);
 void *input_thread(void * arg);
+int open_new_ter();
 
 #endif 

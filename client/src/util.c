@@ -4,7 +4,7 @@
 void setup_board(Board* board) {
     int lines; int columns;
     getmaxyx(stdscr,lines,columns);
-     fprintf(stderr,"ligne %d colonne %d\n",lines, columns);
+    debug_printf("ligne %d, colonne %d", lines, columns);
     board->h = lines - 2 - 1; // 2 rows reserved for border, 1 row for chat
     board->w = columns - 2; // 2 columns reserved for border
     board->grid = calloc((board->w)*(board->h),sizeof(char));
@@ -13,6 +13,28 @@ void setup_board(Board* board) {
 void free_board(Board* board) {
     free(board->grid);
 }
+
+void print_grille(Board * b) {
+    int x,y;
+    for (y = 0; y < b->h; y++) {
+        for (x = 0; x < b->w; x++){
+		int m = get_grid(b,x,y);
+            switch (m) {
+                case 0:
+                   fprintf(stderr,"%d ",m);
+                   break;
+                case 1:
+                   fprintf(stderr,"%d ",m);
+                    break;
+                default:
+                   fprintf(stderr,"%d ",m);
+                    break;
+            }
+        }
+       fprintf(stderr,"\n");
+    }
+}
+
 
 int get_grid(Board* b, int x, int y) {
     return b->grid[y*b->w + x];
@@ -53,7 +75,7 @@ void refresh_game(Board* b, Line* l) {
     // Update chat text
     attron(COLOR_PAIR(1)); // Enable custom color 1
     attron(A_BOLD); // Enable bold
-    for (x = 0; x < b->w+2; x++) {
+    /*for (x = 0; x < b->w+2; x++) {
         if (x >= TEXT_SIZE || x >= l->cursor)
             mvaddch(b->h+2, x, ' ');
         else
@@ -61,7 +83,7 @@ void refresh_game(Board* b, Line* l) {
     }
     attroff(A_BOLD); // Disable bold
     attroff(COLOR_PAIR(1)); // Disable custom color 1
-    refresh(); // Apply the changes to the terminal
+    */refresh(); // Apply the changes to the terminal
 }
 
 ACTION control(Line* l) {

@@ -2,6 +2,7 @@
 #define BOARD_H
 
 #define TEXT_SIZE 255
+#include "util.h"
 
 typedef struct Board {
     uint8_t h;

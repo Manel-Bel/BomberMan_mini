@@ -21,6 +21,7 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include "debug.h"
+#include "board.h"
 
 #define ADDR_GAME "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
 #define PORT_PRINCIPAL 2024
@@ -45,9 +46,6 @@ struct Player{
     int id;  // id player
     int idEq; // id equipes si en mode equipes
     int sockcom; // socket de communication client 
-    //int port_udp;
-    //int port_mdifff;
-    //struct in6_addr addr_mdiff;
     int Ready; // pour savoir si le joueur est pret à jouer
     int pos[2]; // la position du joueur sur la grille
     int *winner; // un seul winner for everyone
@@ -57,6 +55,8 @@ struct Player{
     A_R tabAction[SIZEACTION];
     int len; // le nombre d'action en cours;
     int stat; // 0:vivant(e) 1:mort(e) 
+    char *board;
+    int freq;
 };
 
 struct Bomber{
@@ -66,7 +66,9 @@ struct Bomber{
 
 struct Game{
   Player *plys[4];
-  int nbplys; // nombre joueur en cours
+  int lenplys; // nombre joueur en cours
+
+
   pthread_t thread;
   char mode; // game mode, 1: 4p , 2 : equipes;
   int sock_udp;
@@ -74,12 +76,14 @@ struct Game{
   int port_udp;
   int port_mdifff;
   struct sockaddr_in6 addr_mdiff;
-  char *board;
+  struct Board board;
   char *lastmultiboard;
+
   Bomber tabbommber[SIZEBOMBER];
   pthread_mutex_t *mutexboard;
+  int *winner;
 
-  
+  int freq;
 
 };
 

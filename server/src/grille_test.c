@@ -65,7 +65,7 @@ void print_grille_1D(char *grille){
 
 }
 
-int main5555() {
+/*int main5555() {
     int **grille = malloc(H * sizeof(int*));
     for (int i = 0; i < H; i++) {
         grille[i] = malloc(W * sizeof(int));
@@ -81,5 +81,5 @@ int main5555() {
     free(grille);
 
     return 0;
-}
+}*/
 //gcc -o grille_test grille_test.c && ./grille_test

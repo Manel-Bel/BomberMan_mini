@@ -270,8 +270,8 @@ void *send_freqBoard(void *args)
           case 2:
           case 3:
             moved = 1;
-            debug_printf("perform");
-            printf("action 3");
+            debug_printf("perform\n");
+            printf("action 0à3\n");
             action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, i);
             print_grille_1D((g->board.grid));
             break;
@@ -428,7 +428,7 @@ int insererAction(Player *p, A_R action)
 
 void handling_Action_Request(Game *g)
 {
-  void *buf = malloc(4);
+  uint8_t *buf = malloc(4);
 
   struct sockaddr_in6 servaddr;
   memset(&servaddr, 0, sizeof(servaddr));
@@ -440,21 +440,22 @@ void handling_Action_Request(Game *g)
   while (*(g->plys[0]->winner) == INT_MAX)
   {
     int r = recvfrom(g->sock_udp, buf, 4, 0, NULL, NULL);
-
+    printf("buff %d\n",buf);
     if (r < 0)
     {
       perror("probleme recvfrom in ghangling_Action_Request");
       return NULL;
     }
-    uint16_t *CODEREQ = (uint16_t *)buf;
-    uint16_t *ACTIONLIGNE = (uint16_t *)buf + 2;
-    *CODEREQ = ntohs(*CODEREQ);
-    *ACTIONLIGNE = ntohs(*ACTIONLIGNE);
+    uint16_t CODEREQ = *((uint16_t *)buf);
+    uint16_t ACTIONLIGNE = ((uint16_t *)(buf + 2));
+    CODEREQ = ntohs(CODEREQ);
+    ACTIONLIGNE = ntohs(ACTIONLIGNE);
+
     A_R action;
-    uint16_t id = ((*CODEREQ) >> 1) & 0x3;
-    action.num = (*ACTIONLIGNE) >> 3;
-    action.action = (*ACTIONLIGNE) & 0x7;
-    printf("action recu action %d ",action.action);
+    uint16_t id = (CODEREQ >> 1) & 0x3;
+    action.num = (ACTIONLIGNE) >> 3;
+    action.action = (ACTIONLIGNE) & 0x7;
+    printf("action recu , action est %d\n",action.action);
 
     if (insererAction(g->plys[id], action))
     {

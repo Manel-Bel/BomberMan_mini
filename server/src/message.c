@@ -1,6 +1,8 @@
 #include "../header/message.h"
 
 
+#define TIME 3
+
 
 
 int usedport[1024]={0};
@@ -335,7 +337,7 @@ void *sendCompleteBoard(void *args)
 
     printf("envoi de grille complet \n");
 
-    sleep(1);
+    sleep(TIME);
   }
   return NULL;
 }

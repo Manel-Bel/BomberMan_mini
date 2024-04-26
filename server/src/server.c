@@ -573,6 +573,42 @@ int estGagne(int mode, Game *g)
   return 0;
 }
 
+void putPlayersOnBoard(Game *g) {
+  for (int i = 0; i < g->lenplys; i++) {
+    Player *player = g->plys[i];
+    
+    // Set initial positions based on player ID
+    switch (player->id) {
+      case 0:
+        player->pos[0] = 0; // Top left corner
+        player->pos[1] = 0;
+        break;
+      case 1:
+        player->pos[0] = W - 1; // Bottom right corner
+        player->pos[1] = H - 1;
+        break;
+      case 2:
+        player->pos[0] = 0; // Bottom left corner
+        player->pos[1] = H - 1;
+        break;
+      case 3:
+        player->pos[0] = W - 1; // Top right corner
+        player->pos[1] = 0;
+        break;
+      default:
+        // Handle error case
+        perror("Invalid player ID in putPlayersOnBoard");
+        return;
+    }
+    
+    // Mark player's position on the game board
+    int x = player->pos[0];
+    int y = player->pos[1];
+    g->board.grid[y * W + x] = 5 + player->id;
+  }
+}
+
+
 void *server_game(void *args)
 {
 
@@ -606,6 +642,9 @@ void *server_game(void *args)
   debug_printf("le envoi info ");
 
   sendinitInfo(g);
+
+  /*put players on board*/
+  putPlayersOnBoard(g);
 
   /* waiting for sign of ready of players*/
 

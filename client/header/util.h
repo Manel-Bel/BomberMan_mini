@@ -16,6 +16,7 @@
 typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
 
 #define TEXT_SIZE 255
+#define MAX_PLAYERS 4
 
 typedef struct Board {
     uint8_t h;

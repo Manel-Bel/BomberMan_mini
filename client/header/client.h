@@ -40,7 +40,7 @@ typedef struct{
 
 typedef struct{
     uint16_t codereq_id_eq;
-    uint16_t num;
+    uint16_t num; 
     Board board;
 }GameData;
 

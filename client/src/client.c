@@ -498,11 +498,9 @@ void *receive_game_data_thread(void *args){
                 r = send_action_udp(thread, RIGHT);
                 break;
             case 'q':
-                
-		r = send_action_udp(thread, QUIT);
                 fprintf(stderr,"game endded\n");
-		r= -1;
-		break;
+		        r= -1;
+		        break;
             case '\n': 
                 r = send_chat_message(thread);
                 break;
@@ -528,8 +526,10 @@ int send_action_udp(const ThreadArgs* thread, ACTION action){
     msg.codereq_id_eq = thread->player_data->entete;
     
     //TODO : gerer le numero du message du client 
-    int num_msg = 2;
-    msg.num_action = htons(num_msg << 3 | action);
+    uint16_t num_msg = 2;
+    fprintf("msg  number %u  \n",num_msg << 3 | action);
+    fprintf("msg  number %u  \n",(num_msg << 3) | action);
+    msg.num_action = htons((num_msg << 3) | action);
 
     ssize_t bytes_sent = sendto(thread->socket, &msg, sizeof(msg), 0, (struct sockaddr*)(thread->addr_udp), sizeof(*(thread->addr_udp)));
     if (bytes_sent <= 0) {

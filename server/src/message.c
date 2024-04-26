@@ -192,6 +192,8 @@ int recvTCP(int sock, void *buf, int size)
 {
 
   int total = 0;
+  /*int entetelue=0;
+  */
 
   while (total < size)
   {
@@ -199,7 +201,7 @@ int recvTCP(int sock, void *buf, int size)
     if (nbr < 0)
     {
       perror("recv error in recvTCP");
-      return 1;
+      return -1;
     }
     if (nbr == 0)
     {
@@ -207,6 +209,25 @@ int recvTCP(int sock, void *buf, int size)
       return 1;
     }
     total += nbr;
+
+    /*if(total>=2 && !entetelue){
+      uint16_t CODEREQ=*((uint16_t *)buf);
+      CODEREQ=ntohs(CODEREQ>>3);
+
+      // demande integration 
+      if(CODEREQ==1 || CODEREQ ==2){
+        size=2;
+        return total;
+      }
+
+      if(total>=3){
+        uint8_t LEN=*((uint16_t *)buf+2);
+        size=3+LEN;
+      }
+      entetelue=1;
+    }
+    */
+
   }
   return total;
 }
@@ -294,13 +315,13 @@ void *sendCompleteBoard(void *args)
 
     memcpy(an.board,g->board.grid, g->board.h * g->board.w);
 
-    printf("grille en 2D avant copie");
-    print_grille_1D(g->board.grid);
+    //printf("grille en 2D avant copie");
+    //print_grille_1D(g->board.grid);
 
     pthread_mutex_unlock(g->mutexboard);
 
-    printf("grillle en 1 D apres copie \n");
-    print_grille_1D(an.board);
+    //printf("grillle en 1 D apres copie \n");
+    //print_grille_1D(an.board);
 
     memcpy(g->lastmultiboard,an.board,an.hauteur*an.largeur);
 

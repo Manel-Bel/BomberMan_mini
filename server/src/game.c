@@ -75,7 +75,8 @@ int initgame(Game *g, char mode, int h, int w)
 
   int r = serverUdp(g->sock_udp, g->port_udp);
   /* en cas echec*/
-  if (r){
+  if (r)
+  {
     perror("erreur dans initgame");
     return 1;
   }
@@ -111,56 +112,58 @@ int initgame(Game *g, char mode, int h, int w)
 }
 
 /*retourne 0 si l'ajout est reussi ,1 sinon*/
-int auxaddplyer(Game *g, Player *pl, int nbrply)
-{
-  if (g->lenplys >= nbrply)
-  {
-
-    return 1;
-  }
-  int idEq = (g->mode == 2 && g->lenplys > 1) ? 1 : 0;
-  initplayer(pl, g->lenplys, idEq);
-  g->plys[g->lenplys] = pl;
-  g->lenplys += 1;
-  return 0;
-}
-
-int addPlayerInGames(Game **games, int *pos, Player *pl, char mode, int nbrplys, int h, int w)
+int addPlayerInGame(Game *g, Player *pl, int nbrply)
 {
 
-  int task = -1;
-
-  if (!games[*pos] || (task = auxaddplyer(games[*pos], pl, nbrplys)))
-  {
-
-    Game *g = malloc(sizeof(struct Game));
-    if (g == NULL)
+    if (g->lenplys >= nbrply)
     {
-      perror("Dans initgame:malloc pour Game");
+
       return 1;
     }
-
-    initgame(g, mode, h, w);
-
-    // si echec alors on increment la compteur du tableau pour qu'il pointe tjr sur le dernier element
-
-    if (task == 1)
-    {
-      (*pos) += 1;
-    }
-    auxaddplyer(g, pl, nbrplys);
-
-    games[*pos] = g;
+    int idEq = (g->mode == 2 && g->lenplys > 1) ? 1 : 0;
+    initplayer(pl, g->lenplys, idEq);
+    g->plys[g->lenplys] = pl;
+    g->lenplys += 1;
+    return 0;
   }
+  /*
+  int addPlayerInGames(Game **games, int *pos, Player *pl, char mode, int nbrplys, int h, int w)
+  {
 
-  return 0;
-}
+    int task = -1;
 
-void initplayer(Player *p, int id, int idEq)
-{
+    if (!games[*pos] || (task = auxaddplyer(games[*pos], pl, nbrplys)))
+    {
 
-  p->id = id;
-  p->idEq = idEq;
-  p->Ready = 0;
-  p->len = 0;
-}
+      Game *g = malloc(sizeof(struct Game));
+      if (g == NULL)
+      {
+        perror("Dans initgame:malloc pour Game");
+        return 1;
+      }
+
+      initgame(g, mode, h, w);
+
+      // si echec alors on increment la compteur du tableau pour qu'il pointe tjr sur le dernier element
+
+      if (task == 1)
+      {
+        (*pos) += 1;
+      }
+      auxaddplyer(g, pl, nbrplys);
+
+      games[*pos] = g;
+    }
+
+    return 0;
+  }
+  */
+
+  void initplayer(Player * p, int id, int idEq)
+  {
+
+    p->id = id;
+    p->idEq = idEq;
+    p->Ready = 0;
+    p->len = 0;
+  }

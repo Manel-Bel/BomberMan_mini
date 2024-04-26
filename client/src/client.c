@@ -529,7 +529,8 @@ int send_action_udp(const ThreadArgs* thread, ACTION action){
     
     //TODO : gerer le numero du message du client 
     int num_msg = 2;
-    msg.num_action = htons(num_msg << 3 | action);
+    msg.num_action = htons(num_msg << 3 | action-1);
+    debug_printf("num msg %d\n",msg.num_action);
 
     ssize_t bytes_sent = sendto(thread->socket, &msg, sizeof(msg), 0, (struct sockaddr*)(thread->addr_udp), sizeof(*(thread->addr_udp)));
     if (bytes_sent <= 0) {

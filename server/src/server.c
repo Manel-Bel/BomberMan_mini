@@ -271,7 +271,7 @@ void *send_freqBoard(void *args)
           case 3:
             moved = 1;
             debug_printf("perform\n");
-            printf("action 0à3\n");
+            printf("action 0 à3 \n");
             action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, i);
             print_grille_1D((g->board.grid));
             break;
@@ -428,7 +428,8 @@ int insererAction(Player *p, A_R action)
 
 void handling_Action_Request(Game *g)
 {
-  uint8_t *buf = malloc(4);
+  uint8_t buf[4];
+  memset(buf,0,4);
 
   struct sockaddr_in6 servaddr;
   memset(&servaddr, 0, sizeof(servaddr));
@@ -439,15 +440,21 @@ void handling_Action_Request(Game *g)
   debug_printf("winner dans handling_Action_Request %p", g->plys[0]->winner);
   while (*(g->plys[0]->winner) == INT_MAX)
   {
-    int r = recvfrom(g->sock_udp, buf, 4, 0, NULL, NULL);
-    printf("buff %d\n",buf);
+    int r = recvfrom(g->sock_udp, buf, 10, 0, NULL, NULL);
+    debug_printf("%d octet recu\n ");
     if (r < 0)
     {
       perror("probleme recvfrom in ghangling_Action_Request");
       return NULL;
     }
+
+
     uint16_t CODEREQ = *((uint16_t *)buf);
+    printf("CODEREQ EN BE %d \n",CODEREQ);
+
+
     uint16_t ACTIONLIGNE = ((uint16_t *)(buf + 2));
+    printf("ACTIONLIGNE EN BG : %d \n",ACTIONLIGNE);
     CODEREQ = ntohs(CODEREQ);
     ACTIONLIGNE = ntohs(ACTIONLIGNE);
 

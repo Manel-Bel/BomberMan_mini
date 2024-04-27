@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "../header/grille_test.h"
 
 #define H 20
 #define W 20
 
-void init_grille(char *grille) {
+void init_grille(uint8_t *grille) {
     // Initialize all positions as empty space
     for (int i = 0; i < H; i++) {
         for (int j = 0; j < W; j++) {
@@ -63,7 +64,7 @@ void print_grille(char **grille) {
     }
 }
 
-void print_grille_1D(char *grille){
+void print_grille_1D(uint8_t *grille){
 
     printf("imprimer grille \n");
     for (int i = 0; i < H; i++) {

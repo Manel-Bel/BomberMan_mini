@@ -4,6 +4,6 @@
 myprogram
 bin/
 main
-client
-server
+client/client
+server/server
 .vscode

@@ -3,9 +3,8 @@
 
 #define H 20
 #define W 20
-#define nbrply 1
-#define freq 500
-#define DEBUG 0
+#define nbrply 2
+#define freq 500 * 1000 // 500  ms
 #define TEXTSIZE 255
 
 /* à revoir*/
@@ -34,7 +33,7 @@ void *surveiller(void *args)
   winner = (arg->mode == 1) ? (winner << 1) : winner;
   an.entete = htons(15 << 3 | winner);
 
-  for (size_t i = 0; i < nbrply; i++)
+  for (int  i = 0; i < nbrply; i++)
   {
     pthread_join(arg->tab[i], NULL);
   }
@@ -107,7 +106,7 @@ int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul)
 
 void cancellastmove(A_R *tab, int size)
 {
-  for (size_t i = 0; i < size; i--)
+  for (int  i = 0; i < size; i--)
   {
     if (tab[size - i].action < 4 && tab[size - i].action >= 0)
     {
@@ -117,11 +116,14 @@ void cancellastmove(A_R *tab, int size)
   }
 }
 
-void action_perform(char *board, int x, int y, int action, int id)
+void action_perform(uint8_t *board, int x, int y, int action, Player *p)
 {
-  int numcaseply = 5 + id;
+  int numcaseply = 5 + p->id;
 
-  if (action >= 0 && action <= 3)
+  int x2 = x;
+  int y2 = y;
+
+  if (action <= 3)
   {
     switch (action)
     {
@@ -130,11 +132,8 @@ void action_perform(char *board, int x, int y, int action, int id)
       {
         return;
       }
-      board[y * H + x] -= numcaseply;
-      if (!board[(y - 1) * H + x])
-      {
-        board[(y - 1) * H + x] = numcaseply;
-      }
+      
+      y2--;
 
       break;
     case 1:
@@ -142,24 +141,17 @@ void action_perform(char *board, int x, int y, int action, int id)
       {
         return;
       }
-      board[y * W + x] -= numcaseply;
-      if (!board[(y + 1) * H + x])
-      {
-        board[y * W + (x + 1)] = numcaseply;
-      }
+
+      x2++;
 
       break;
+
     case 2:
       if (y >= H - 1)
       {
         return;
       }
-      board[y * W + x] -= numcaseply;
-
-      if (!board[(y + 1) * H + x])
-      {
-        board[(y + 1) * H + x] = numcaseply;
-      }
+      y2++;
 
       break;
     default:
@@ -167,25 +159,33 @@ void action_perform(char *board, int x, int y, int action, int id)
       {
         return;
       }
-      board[y * W + x] -= numcaseply;
-      if (board[y * W + (x - 1)] == 0)
-      {
-        board[y * W + (x - 1)] = numcaseply;
-      }
+      x2--;
+    }
+
+    if (!board[(y2)*W + x2])
+    {
+      debug_printf("action realisé %d\n",action);
+      board[y * W + x] = 0;
+      board[y2 * W + x2] = numcaseply;
+      p->pos[0] = x2;
+      p->pos[1] = y2;
     }
   }
   else
   {
-    board[y * W + x] += 4; // 5+i+4 signifie que le joueur est sur la meme case de la bombe
+    // board[y * W + x] += numcaseply; // 5+i+4 signifie que le joueur est sur la meme case de la bombe
+
+    // la bombe devient invisible tant que le joueur est sur la case
+    // par consequent il faut memeriser la position de bombe posée
   }
 }
 
 /* retourne le nombre de difference entre board et board1*/
 
-int nbrDiff(char *board, char *board1)
+int nbrDiff(uint8_t *board, char *board1)
 {
   int comp = 0;
-  for (size_t i = 0; i < H * W; i++)
+  for (int  i = 0; i < H * W; i++)
   {
     if (board1[i] != board[i])
     {
@@ -195,12 +195,12 @@ int nbrDiff(char *board, char *board1)
   return comp;
 }
 
-void fillDiff(char *buff, char *b, char *bdiff)
+void fillDiff(uint8_t *buff, char *b, char *bdiff)
 {
   int n = 0;
-  for (size_t i = 0; i < H; i++)
+  for (int i = 0; i < H; i++)
   {
-    for (size_t j = 0; j < W; j++)
+    for (int j = 0; j < W; j++)
     {
       if (b[i * H + j] != bdiff[i * H + j])
       {
@@ -217,20 +217,20 @@ void fillDiff(char *buff, char *b, char *bdiff)
 
 void print_tab(char *buff, int size)
 {
-  for (size_t i = 0; i < size ; i ++)
+  for (int i = 0; i < size; i++)
   {
-    if(i%3==0){
-      printf(" hauteur : %d",buff[i]);  
-    }else if(i%3==1){
-      printf(" largeur : %d",buff[i]);  
-
-    }else{
-      printf("case numero : %d \n",buff[i]);
-
-
+    if (i % 3 == 0)
+    {
+      printf(" hauteur : %d", buff[i]);
     }
-    
-    
+    else if (i % 3 == 1)
+    {
+      printf(" largeur : %d", buff[i]);
+    }
+    else
+    {
+      printf("case numero : %d \n", buff[i]);
+    }
   }
 }
 
@@ -244,13 +244,29 @@ void *send_freqBoard(void *args)
   while (1)
   {
 
-    sleep(1);
-    for (size_t i = 0; i < nbrply; i++)
+    debug_printf("start sleep \n");
+    clock_t debut, fin;
+    double temps;
+
+    debut = clock();
+    usleep(freq);
+    fin = clock();
+
+    temps = (double)(fin - debut) / CLOCKS_PER_SEC * 1000;
+    debug_printf("Temps ecoulé en : %.3f ms\n", temps);
+
+    debug_printf("end sleep \n");
+
+    debug_printf("start traitement donnée");
+
+    for (int i = 0; i < nbrply; i++)
     {
 
       pthread_mutex_lock(g->plys[i]->lockstats);
       // le nombre action enregistrer actuellement dans le pile d'action
       int len = g->plys[i]->len;
+
+      debug_printf("la taille de action recuperer  %d  \n ", len);
       A_R tabaction[len];
       memcpy(tabaction, g->plys[i]->tabAction, len * sizeof(A_R));
       pthread_mutex_unlock(g->plys[i]->lockstats);
@@ -258,7 +274,7 @@ void *send_freqBoard(void *args)
       int moved = 0;
       int bombered = 0;
 
-      for (size_t j = 0; j < len; j++)
+      for (int j = 0; j < len; j++)
       {
         if (!moved || !bombered)
         {
@@ -269,16 +285,26 @@ void *send_freqBoard(void *args)
           case 1:
           case 2:
           case 3:
-            moved = 1;
-            debug_printf("perform\n");
-            printf("action 0 à3 \n");
-            action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, i);
-            print_grille_1D((g->board.grid));
+
+            if (!moved)
+            {
+              debug_printf("perform\n");
+              debug_printf("action 0 à3 \n");
+              action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i]);
+              print_grille_1D((g->board.grid));
+
+              moved = 1;
+            }
+            
             break;
           case 4:
-            bombered = 1;
-
-            action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, i);
+            
+            if(!bombered){
+              action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i]);
+              bombered = 1;
+            }
+            
+            
             break;
           case 5:
             if (!moved)
@@ -287,9 +313,11 @@ void *send_freqBoard(void *args)
               j++;
             }
           default:
-            debug_printf("dans aucun de ces cas \n");
+            // debug_printf("dans aucun de ces cas \n");
             break;
           }
+        }else{
+          break;
         }
       }
 
@@ -298,18 +326,18 @@ void *send_freqBoard(void *args)
       memcpy(g->plys[i]->tabAction, g->plys[i]->tabAction + len, (g->plys[i]->len - len) * sizeof(A_R));
       g->plys[i]->len -= len;
       pthread_mutex_unlock(g->plys[i]->lockstats);
-      
     }
 
-    
-
-
     int nb = nbrDiff(g->board.grid, g->lastmultiboard);
-    printf("nombre de diff %d \n",nb);
+    // printf("nombre de diff %d \n",nb);
 
     /* puis on envoie le differenciel*/
 
     void *buffsend = malloc(5 + nb);
+    if(buffsend==NULL){
+      perror("malloc dans freq_");
+      return NULL;
+    }
     uint16_t *entete = (uint16_t *)buffsend;
     *entete = htons(12 << 3);
 
@@ -320,8 +348,8 @@ void *send_freqBoard(void *args)
     *NB = nb;
     char *buff = (char *)buffsend + 5;
     fillDiff(buff, g->board.grid, g->lastmultiboard);
-    //debug_printf("affiche buff envoyé");
-    print_tab(buff, nb);
+    // debug_printf("affiche buff envoyé");
+    // print_tab(buff, nb);
 
     sendto(g->sock_mdiff, buffsend, 5 + nb, 0, (struct sockaddr *)&g->addr_mdiff, sizeof(g->addr_mdiff));
 
@@ -336,16 +364,14 @@ void *hanglingTchat(Game *g)
   memset(buf, 0, 1500);
   while (*(g->plys[0]->winner) == __INT_MAX__)
   {
-    if (DEBUG)
-      printf("entrer dans select_n");
+      debug_printf("entrer dans select_n");
     fd_set rset;
     FD_ZERO(&rset);
     int sockmax = 0;
-    if (DEBUG)
-      printf("recuperer les socks clients\n");
+      debug_printf("recuperer les socks clients\n");
 
     /* ajouter les socket clients  tcp dans l'ensemble de lecture */
-    for (size_t i = 0; i < nbrply; i++)
+    for (int i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
       sockmax = (sock > sockmax) ? sock : sockmax;
@@ -354,7 +380,7 @@ void *hanglingTchat(Game *g)
     /* ajouter le socket udp dans l'ensemble de lexture */
     select(sockmax + 1, 0, &rset, 0, NULL);
 
-    for (size_t i = 0; i < nbrply; i++)
+    for (int i = 0; i < nbrply; i++)
     {
 
       int sock = g->plys[i]->sockcom;
@@ -429,7 +455,7 @@ int insererAction(Player *p, A_R action)
 void handling_Action_Request(Game *g)
 {
   uint8_t buf[4];
-  memset(buf,0,4);
+  memset(buf, 0, 4);
 
   struct sockaddr_in6 servaddr;
   memset(&servaddr, 0, sizeof(servaddr));
@@ -441,38 +467,39 @@ void handling_Action_Request(Game *g)
   while (*(g->plys[0]->winner) == INT_MAX)
   {
     int r = recvfrom(g->sock_udp, buf, 10, 0, NULL, NULL);
-    debug_printf("%d octet recu\n ");
+    // debug_printf("%d octet recu\n ",r);
     if (r < 0)
     {
       perror("probleme recvfrom in ghangling_Action_Request");
       return NULL;
     }
 
-
     uint16_t CODEREQ = *((uint16_t *)buf);
-    printf("CODEREQ EN BE %d \n",CODEREQ);
+    // printf("CODEREQ EN BE %d \n",CODEREQ);
 
-
-    uint16_t ACTIONLIGNE = ((uint16_t *)(buf + 2));
-    printf("ACTIONLIGNE EN BG : %d \n",ACTIONLIGNE);
+    // printf("%d\n",buf[2]);
+    // printf("%d\n",buf[3]);
+    uint16_t ACTIONLIGNE = *((uint16_t *)(buf + 2));
+    // printf("ACTIONLIGNE EN BG : %d \n",ACTIONLIGNE);
     CODEREQ = ntohs(CODEREQ);
     ACTIONLIGNE = ntohs(ACTIONLIGNE);
 
     A_R action;
     uint16_t id = (CODEREQ >> 1) & 0x3;
+    debug_printf("id recu %d\n",id);
     action.num = (ACTIONLIGNE) >> 3;
     action.action = (ACTIONLIGNE) & 0x7;
-    printf("action recu , action est %d\n",action.action);
+    debug_printf("action recu , action est %d et son num %d\n", action.action,action.num);
 
     if (insererAction(g->plys[id], action))
     {
 
-      printf("trop d'action \n");
+      debug_printf("trop d'action \n");
     }
     else
     {
 
-      printf("Ajout action reussi\n");
+      debug_printf("Ajout action reussi\n");
     }
   }
 }
@@ -488,7 +515,7 @@ int sendinitInfo(Game *g)
     int sockmax = 0;
     int task_done[nbrply] = {0};
 
-    for (size_t i = 0; i < nbrply; i++)
+    for (int i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
       sockmax = (sock > sockmax) ? sock : sockmax;
@@ -498,7 +525,7 @@ int sendinitInfo(Game *g)
 
     /* send player info*/
 
-    for (size_t i = 0; i < nbrply; i++)
+    for (int i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
 
@@ -520,25 +547,25 @@ int waitingforReadySign(Game *g)
   int n = 0;
   while (n < nbrply)
   {
-    printf("entrer dans select_n");
+    debug_printf("entrer dans select_n");
     fd_set rset;
     FD_ZERO(&rset);
     int sockmax = 0;
-    printf("recuperer les socks clients\n");
-    for (size_t i = 0; i < nbrply; i++)
+    debug_printf("recuperer les socks clients\n");
+    for (int i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
       sockmax = (sock > sockmax) ? sock : sockmax;
       FD_SET(sock, &rset);
     }
     select(sockmax + 1, 0, &rset, 0, NULL);
-    for (size_t i = 0; i < nbrply; i++)
+    for (int i = 0; i < nbrply; i++)
     {
       int sock = g->plys[i]->sockcom;
-      printf("verifie si plyas est resay\n");
+      debug_printf("verifie si plyas est resay\n");
       if (FD_ISSET(sock, &rset) && !g->plys[i]->Ready)
       {
-        printf("recuperer le message plys\n");
+        debug_printf("recuperer le message plys\n");
         g->plys[i]->Ready = recvRequestReady(sock, g->mode);
         if (g->plys[i])
         {
@@ -561,7 +588,7 @@ int estGagne(int mode, Game *g)
     if (g->lenplys == 2 && g->mode == 2)
     {
       int idsurv = -1;
-      for (size_t i = 0; i < nbrply; i++)
+      for (int i = 0; i < nbrply; i++)
       {
         if (idsurv == -1 && g->plys[i]->stat == 0)
         {
@@ -581,41 +608,43 @@ int estGagne(int mode, Game *g)
   return 0;
 }
 
-void putPlayersOnBoard(Game *g) {
-  for (int i = 0; i < g->lenplys; i++) {
+void putPlayersOnBoard(Game *g)
+{
+  for (int i = 0; i < g->lenplys; i++)
+  {
     Player *player = g->plys[i];
-    
+
     // Set initial positions based on player ID
-    switch (player->id) {
-      case 0:
-        player->pos[0] = 0; // Top left corner
-        player->pos[1] = 0;
-        break;
-      case 1:
-        player->pos[0] = W - 1; // Bottom right corner
-        player->pos[1] = H - 1;
-        break;
-      case 2:
-        player->pos[0] = 0; // Bottom left corner
-        player->pos[1] = H - 1;
-        break;
-      case 3:
-        player->pos[0] = W - 1; // Top right corner
-        player->pos[1] = 0;
-        break;
-      default:
-        // Handle error case
-        perror("Invalid player ID in putPlayersOnBoard");
-        return;
+    switch (player->id)
+    {
+    case 0:
+      player->pos[0] = 0; // Top left corner
+      player->pos[1] = 0;
+      break;
+    case 1:
+      player->pos[0] = W - 1; // Bottom right corner
+      player->pos[1] = H - 1;
+      break;
+    case 2:
+      player->pos[0] = 0; // Bottom left corner
+      player->pos[1] = H - 1;
+      break;
+    case 3:
+      player->pos[0] = W - 1; // Top right corner
+      player->pos[1] = 0;
+      break;
+    default:
+      // Handle error case
+      perror("Invalid player ID in putPlayersOnBoard");
+      return;
     }
-    
+
     // Mark player's position on the game board
     int x = player->pos[0];
     int y = player->pos[1];
     g->board.grid[y * W + x] = 5 + player->id;
   }
 }
-
 
 void *server_game(void *args)
 {
@@ -683,15 +712,14 @@ void *server_game(void *args)
   pthread_t surveillant;
   pthread_t thread_tchat;
 
-  g->plys[0]->pos[0] = 0;
-  g->plys[0]->pos[1] = 0;
+ 
 
-  for (size_t i = 0; i < nbrply; i++)
+  for (int i = 0; i < nbrply; i++)
   {
 
     pthread_mutex_init(mutexstats + i, NULL);
     g->plys[i]->lockstats = mutexstats + i;
-    printf("le winner donné au joueur  %p\n", g->plys[0]->winner);
+    debug_printf("le winner donné au joueur  %p\n", g->plys[0]->winner);
     g->plys[i]->winner = winner;
     g->plys[i]->condwin = &condwin;
     g->plys[i]->vicmutex = &vicmutex;
@@ -717,7 +745,7 @@ void *server_game(void *args)
   argsurvs->vicmutex = &vicmutex;
   argsurvs->mode = g->mode;
   argsurvs->statusthread = INT_MAX;
-  printf("arg pointeur %p \n", argsurvs);
+  debug_printf("arg pointeur %p \n", argsurvs);
 
   if (pthread_create(&surveillant, NULL, surveiller, argsurvs) < 0)
   {
@@ -888,12 +916,12 @@ int main_serveur()
           inet_ntop(AF_INET6, &addrclient.sin6_addr, addr, INET6_ADDRSTRLEN);
           if (sockclient < 0)
           {
-            printf("ECHEC: connexion de %s\n", addr);
+            debug_printf("ECHEC: connexion de %s\n", addr);
             continue;
           }
           else
           {
-            printf("OK :connexion de %s\n", addr);
+            debug_printf("OK :connexion de %s\n", addr);
           }
 
           fds[nfds].fd = sockclient;
@@ -954,7 +982,9 @@ int main_serveur()
       }
     }
     compactfds(fds, &nfds);
-    if (DEBUG)
+
+    /*
+    if (0)
     {
 
       for (int i = 0; i < nfds; i++)
@@ -962,10 +992,10 @@ int main_serveur()
         printf("fds[%d]:%d\n", i, fds[i].fd);
       }
     }
+    */
   }
   return 0;
-error:
-  return 1;
+
 }
 
 int main(int argc, char **argv)

@@ -199,7 +199,7 @@ int recvTCP(int sock, void *buf, int size)
 
   while (total < size)
   {
-    int nbr = recv(sock, buf + total, size, 0);
+    int nbr = recv(sock, buf + total, size-total, 0);
     if (nbr < 0)
     {
       perror("recv error in recvTCP");
@@ -212,80 +212,30 @@ int recvTCP(int sock, void *buf, int size)
     }
     total += nbr;
 
-    /*if(total>=2 && !entetelue){
-      uint16_t CODEREQ=*((uint16_t *)buf);
-      CODEREQ=ntohs(CODEREQ>>3);
-
-      // demande integration 
-      if(CODEREQ==1 || CODEREQ ==2){
-        size=2;
-        return total;
-      }
-
-      if(total>=3){
-        uint8_t LEN=*((uint16_t *)buf+2);
-        size=3+LEN;
-      }
-      entetelue=1;
-    }
-    */
-
+    
   }
   return total;
 }
 
-void sendTCPtoALL(Game *g, void *buf, int sizebuff,int nbrply)
+void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff)
 {
-  int n = 0;
+  int timeout=100;
+  int n=0;
+  struct pollfd activi[nfds];
+  memcpy(activi,fds,nfds*sizeof(struct pollfd));
 
-  int total = 0;
-
-  while (n < nbrply)
-  {
-    fd_set wset;
-    FD_ZERO(&wset);
-    int sockmax = 0;
-    int task_done[nbrply] ;
-    memset(task_done,0,nbrply);
-
-    for (int i = 0; i < nbrply; i++)
-    {
-      int sock = g->plys[i]->sockcom;
-      sockmax = (sock > sockmax) ? sock : sockmax;
-      FD_SET(sock, &wset);
-    }
-    select(sockmax + 1, 0, &wset, 0, NULL);
-
-    /* send buff */
-
-    for (int i = 0; i < nbrply; i++)
-    {
-      int sock = g->plys[i]->sockcom;
-      g->plys[i]->id = i;
-      g->plys[i]->idEq = (i < 2) ? 0 : 1;
-
-      if (FD_ISSET(sock, &wset) && !task_done[i])
-      {
-        total = 0;
-        while (total < sizebuff)
-        {
-          int nbr = send(g->plys[i]->sockcom, buf + total, sizebuff, 0);
-          if (nbr < 0)
-          {
-            perror("problem de send in sendTchat");
-            return;
-          }
-          if (nbr == 0)
-          {
-            perror("problem de connexion du coté client ");
-            return;
-          }
-          total += nbr;
-        }
+  while(n<nfds){
+    poll(activi,nfds,timeout);
+    for(int i=0;i<nfds;i++){
+      if(activi[i].fd!=-1 && activi[i].revents==POLLIN){
+        sendTCP(activi[i].fd,buf,sizebuff);
+        activi[i].fd=-1;
+        n++;
       }
-      n += 1;
     }
   }
+  
+  
 }
 
 void *sendCompleteBoard(void *args)

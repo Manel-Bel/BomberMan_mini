@@ -2,6 +2,7 @@
 #define MESSAGE_H
 
 #include "util.h"
+#include <poll.h>
 
 struct Request
 {
@@ -53,7 +54,7 @@ void generateAdrMultidiff(struct in6_addr *addr);
 int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
 int  recvRequestReady(int sock,char mode);
 void *sendCompleteBoard(void *args);
-void sendTCPtoALL(Game *g, void *buf, int sizebuff,int nbrply);
+void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff);
 int recvTCP(int sock, void *buf, int size);
 int sendTCP(int sock, void *buf, int size);
 int  recvRequestReady(int sock,char mode);

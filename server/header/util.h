@@ -29,6 +29,18 @@
 #define PORT_PRINCIPAL 2024
 #define SIZEACTION 20
 #define SIZEBOMBER 40
+#define BOMB_COUNTDOWN_INTERVAL 100 // 3 s/30,000μs = 3,000 ms/30 ms = 100
+
+typedef enum {
+    EMPTY = 0,
+    INDESTRUCTIBLE_WALL = 1,
+    DESTRUCTIBLE_WALL = 2,
+    BOMB = 3,
+    EXPLOSION = 4,
+    PLAYER_START = 5,
+    PLAYER_END = 9 //player0=5,player1=6,player2=7,player3=8
+} CellType;
+
 
 typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
 
@@ -86,7 +98,8 @@ struct Game{
   int *winner;
 
   int freq;
-
+  int num_bombs;  // Number of active bombs
+  int loop_counter;  // Counter for game loops
 };
 
 #endif

@@ -38,7 +38,7 @@ typedef struct Argsurveillants argsurv;
 
 
 
-
+void putPlayersOnBoard(Game *g);
 int estGagne(int mode,Game *g);
 void *surveiller(void *args);
 int serverUdp(int sock, int port);

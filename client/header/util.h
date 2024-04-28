@@ -27,6 +27,8 @@ typedef struct Board {
 typedef struct Line {
     char data[TEXT_SIZE];
     int cursor;
+    char last_msg1[TEXT_SIZE];
+    char last_msg2[TEXT_SIZE];
 } Line;
 
 typedef struct Pos{

@@ -86,24 +86,26 @@ void refresh_game(Board* b, Line* l) {
         mvaddch(y, b->w+1, '|');
     }
     // Draw chat area
-    for (y = b->h+2; y < b->h+4; y++) {
+    for (y = b->h+2; y < b->h+5; y++) {
         for (x = 0; x < b->w+2; x++) {
             mvaddch(y, x, ' ');
         }
     }
 
+    // Draw last two messages
+    attron(COLOR_PAIR(1)); // Enable custom color 1
+    mvaddstr(b->h+2, 1, l->last_msg1); // Print last message 1
+    mvaddstr(b->h+3, 1, l->last_msg2); // Print last message 2
+    attroff(COLOR_PAIR(1)); // Disable custom color 1
+
     // Update chat text
     attron(COLOR_PAIR(1)); // Enable custom color 1
     attron(A_BOLD); // Enable bold
-    /*for (x = 0; x < b->w+2; x++) {
-        if (x >= TEXT_SIZE || x >= l->cursor)
-            mvaddch(chat_row, x, ' ');
-        else
-            mvaddch(chat_row, x, l->data[x]);
-    }
+    mvaddstr(b->h+4, 1, l->data); // Print user input
     attroff(A_BOLD); // Disable bold
     attroff(COLOR_PAIR(1)); // Disable custom color 1
-    */refresh(); // Apply the changes to the terminal
+
+    refresh(); // Apply the changes to the terminal
 }
 
 

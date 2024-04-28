@@ -504,6 +504,14 @@ void *receive_game_data_thread(void *args){
 		r= -1;
 		break;
             case '\n': 
+                // Update the message buffers
+                strcpy(thread->line->last_msg2, thread->line->last_msg1);
+                strcpy(thread->line->last_msg1, thread->line->data);
+
+                // Clear the user input buffer
+                memset(thread->line->data, 0, TEXT_SIZE);
+                thread->line->cursor = 0;
+
                 r = send_chat_message(thread);
                 break;
             default:

@@ -359,18 +359,30 @@ void *send_freqBoard(void *args)
   }
 }
 
-void readTchat(void *buf, int sock, int *size)
+int readTchat(void *buf, int sock, int *size)
 {
 
-  recvTCP(sock, buf, 3);
-  uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buf);
+  uint8_t *buffer=(uint8_t *)buf;
+  
+  printf("start to read tchat message\n");
+  int total=0;
+
+  if((total=recvTCP(sock, buf, 3))<=0){
+    return 1;
+  }
+  printf("recv taille recu %d \n ", total);
+  uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buffer);
   uint8_t id_eq = ntohs(*CODEREQ_ID_REQ) & 0x7;
+
+  
   *CODEREQ_ID_REQ = htons(13 << 3 | id_eq);
 
-  uint8_t len = *((uint8_t *)(buf + 2));
+  uint8_t len = *(buffer + 2);
   *size = len;
-  debug_printf("len recu %d\n", len);
-  recvTCP(sock, buf + 3, len);
+  printf("len recu %d\n", len);
+  if(recvTCP(sock, buffer + 3, len)<=0){
+    return 1;
+  }
 }
 
 int insererAction(Player *p, A_R action)
@@ -721,8 +733,11 @@ void *server_game(void *args)
         {
           memset(bufTCHAT, 0, 1500);
           int len;
-          readTchat(bufTCHAT, fds[i].fd, &len);
-          sendTCPtoALL(fds, 4, bufTCHAT, len);
+          if(readTchat(bufTCHAT, fds[i].fd, &len)==1){
+            debug_printf("prbleme de connexion client");
+          }else{
+            sendTCPtoALL(fds, 4, bufTCHAT, len);
+          }
         }
       }
     }
@@ -817,8 +832,9 @@ int main_serveur()
     perror("reutilisation de port impossible");
 
   r = bind(sock, (struct sockaddr *)&address_sock, sizeof(address_sock));
-  if (r < 0)
+  if (r < 0){
     perror("bind problem");
+  }
 
   r = listen(sock, 0);
   if (r < 0)
@@ -866,6 +882,7 @@ int main_serveur()
           unsigned size = 0;
           debug_printf("attends une connexoin");
           int sockclient = accept(sock, (struct sockaddr *)&addrclient, &size);
+          printf("sockclient %d \n ", sockclient);
 
           /* En cas d'erreur ,affiche l'adresse du connexion echouee */
 

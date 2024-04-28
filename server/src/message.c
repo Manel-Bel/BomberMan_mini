@@ -223,11 +223,14 @@ void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff)
   int n=0;
   struct pollfd activi[nfds];
   memcpy(activi,fds,nfds*sizeof(struct pollfd));
+  for(int i=0;i<nfds;i++){
+    activi[i].events=POLLOUT;
+  }
 
   while(n<nfds){
     poll(activi,nfds,timeout);
     for(int i=0;i<nfds;i++){
-      if(activi[i].fd!=-1 && activi[i].revents==POLLIN){
+      if(activi[i].fd!=-1 && activi[i].revents==POLLOUT){
         sendTCP(activi[i].fd,buf,sizebuff);
         activi[i].fd=-1;
         n++;

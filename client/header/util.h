@@ -13,7 +13,7 @@
 #define ADDR_GAME_ "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
 #define PORT_PRINCIPAL 2024
 
-typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT, NONE} ACTION;
+typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT,TCHAT, NONE} ACTION;
 
 #define TEXT_SIZE 255
 

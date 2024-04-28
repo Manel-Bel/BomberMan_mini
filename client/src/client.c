@@ -132,7 +132,7 @@ int main(int argc, char *argv[]){
     */
 
     while(1){
-        int ret = poll(fds, MAX_FDS, 1); 
+        int ret = poll(fds, MAX_FDS,-1); 
         if(ret == -1){
             perror("Error polling");
             break ;
@@ -145,13 +145,18 @@ int main(int argc, char *argv[]){
                 receive_game_data_thread(&argsGame);
 
             if(fds[3].revents & POLLIN){ //STDIN ready to read
-                int action_r = input_thread(&argsUdp);
-                if(action_r == TCHAT){
-                    if(fds[0].revents & POLLOUT)
-                        send_chat_message(&argsTcp);
-                }else{
-                    if(fds[1].revents & POLLOUT)
-                        send_action_udp(&argsUdp, action_r); //poll for socket udp
+                ACTION action_r = input_thread(&argsUdp);
+		if(action_r != NONE){
+                	debug_printf("action to send %d",action_r);
+			if(action_r == TCHAT){
+                    		if(fds[0].revents & POLLOUT){
+			    		debug_printf("tcp ready");
+                        		send_chat_message(&argsTcp);
+		    		}
+                	}else{
+				if( fds[1].revents & POLLOUT)
+                        		send_action_udp(&argsUdp, action_r); //poll for socket 
+			}
                 }
             }
         }
@@ -354,10 +359,12 @@ int send_chat_message(const ThreadArgs * args){
     //TODO CODEREQ CHAT MSG GROUPE OR COEQUIPIER
     msg.codereq_id_eq = htons((7 << 3) | (thread->player_data->entete & 0x7));
     msg.data = thread->line->data;
+    debug_printf("msg dans send  chat %s.",msg.data);
     ssize_t r;
     ssize_t total = 0; 
-    int len = strlen(thread->line->data);
-    while(total < len + 3){
+    msg.len = strlen(thread->line->data);
+    debug_printf("len msg dans send  chat %d",msg.len);
+    while(total < msg.len + 3){
         if((r = send(thread->socket, &msg + total, sizeof(msg) - total, 0)) < 0){
             perror("error while sending chat message");
             return -1;
@@ -511,9 +518,9 @@ void *receive_game_data_thread(ThreadArgs *args){
         return NULL;
 }
 
-int input_thread(ThreadArgs * arg){
+ACTION input_thread(ThreadArgs * arg){
     ThreadArgs *thread = (ThreadArgs *) arg;
-    int r;
+    ACTION  r =NONE ;
     // while(game_running){
     int c;
     int prev_c = ERR;

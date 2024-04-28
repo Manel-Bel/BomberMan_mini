@@ -14,10 +14,12 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <stdbool.h>
+#include <poll.h>
 #include "util.h"
 #include "debug.h"
 
-#define GRID_SIZE 400
+// #define GRID_SIZE 400
+#define MAX_FDS 4
 
 typedef struct {
     uint16_t entete; // Code de la requête
@@ -61,10 +63,10 @@ void print_ServerMessage22(const ServerMessage22* msg);
 int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr);
 int init_udp_adr(int *sock_udp, const ServerMessage22* player_data, struct sockaddr_in6 *addr_udp);
 int send_chat_message(const ThreadArgs * args);
-void *receive_chat_message(void * arg);
-void *receive_game_data_thread(void *args);
+void *receive_chat_message(ThreadArgs* arg);
+void *receive_game_data_thread(ThreadArgs* args);
 int send_action_udp(const ThreadArgs* thread, ACTION action);
-void *input_thread(void * arg);
-int open_new_ter();
+ACTION input_thread(ThreadArgs* arg);
+int open_new_ter(const char *name);
 
 #endif 

@@ -9,11 +9,11 @@
 #include "debug.h"
 
 
-#define ADDR_GAME_LOOP "::1"
-#define ADDR_GAME "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
+#define ADDR_GAME "::1"
+#define ADDR_GAME_ "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
 #define PORT_PRINCIPAL 2024
 
-typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
+typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT,TCHAT, NONE} ACTION;
 
 #define TEXT_SIZE 255
 #define MAX_PLAYERS 4

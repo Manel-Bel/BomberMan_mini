@@ -550,6 +550,13 @@ ACTION input_thread(ThreadArgs * arg){
             r = QUIT;
             break;
         case '\n': 
+            // Update the message buffers
+            strcpy(thread->line->last_msg2, thread->line->last_msg1);
+            strcpy(thread->line->last_msg1, thread->line->data);
+
+            // Clear the user input buffer
+            memset(thread->line->data, 0, TEXT_SIZE);
+            thread->line->cursor = 0;
             r = TCHAT;
             debug_printf("msg send in tchat");
             break;

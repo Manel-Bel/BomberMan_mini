@@ -451,6 +451,10 @@ void *receive_chat_message(ThreadArgs * arg){
         }
         total += r;
     }
+    // Update the message buffers
+    strcpy(thread->line->last_msg2, thread->line->last_msg1);
+    strcpy(thread->line->last_msg1, msg.data);
+    
     // TODO PRINT THOSE CHAT MSG 
     debug_printf("Chat msg Received:");
     debug_printf("CODEREQ: %u ID: %u", msg.codereq_id_eq >> 3, (msg.codereq_id_eq >> 3) & 0x3); // Extrait le CODEREQ id
@@ -577,10 +581,6 @@ ACTION input_thread(ThreadArgs * arg){
             r = QUIT;
             break;
         case '\n': 
-            // Update the message buffers
-            strcpy(thread->line->last_msg2, thread->line->last_msg1);
-            strcpy(thread->line->last_msg1, thread->line->data);
-
             // Clear the user input buffer
             // memset(thread->line->data, 0, TEXT_SIZE);
             // thread->line->cursor = 0;

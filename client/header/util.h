@@ -13,7 +13,7 @@
 #define ADDR_GAME_ "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
 #define PORT_PRINCIPAL 2024
 
-typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT, NONE} ACTION;
+typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT,TCHAT, NONE} ACTION;
 
 #define TEXT_SIZE 255
 #define MAX_PLAYERS 4
@@ -27,6 +27,8 @@ typedef struct Board {
 typedef struct Line {
     char data[TEXT_SIZE];
     int cursor;
+    char last_msg1[TEXT_SIZE];
+    char last_msg2[TEXT_SIZE];
 } Line;
 
 typedef struct Pos{

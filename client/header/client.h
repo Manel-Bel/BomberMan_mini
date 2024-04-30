@@ -37,7 +37,7 @@ typedef struct {
 typedef struct{
     uint16_t codereq_id_eq;
     uint8_t len;
-    char * data;
+    char data[TEXT_SIZE];
 }ChatMessage;
 
 typedef struct{

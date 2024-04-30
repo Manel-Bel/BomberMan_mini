@@ -386,16 +386,19 @@ int send_chat_message(const ThreadArgs *args)
 {
     ThreadArgs *thread = (ThreadArgs *)args;
     ChatMessage msg;
+    memset(&msg,0,sizeof(ChatMessage));
     //TODO CODEREQ CHAT MSG GROUPE OR COEQUIPIER
     msg.codereq_id_eq = htons((7 << 3) | (thread->player_data->entete & 0x7));
-    msg.data = thread->line->data;
-    debug_printf("msg dans send  chat %s.",msg.data);
+    debug_printf("msg codereq %d\n",msg.codereq_id_eq);
+    
     ssize_t r;
     ssize_t total = 0; 
-    msg.len = strlen(thread->line->data);
-    debug_printf("len msg dans send  chat %d",msg.len);
+    msg.len = strlen("Coucou une premier test\n");//strlen(thread->line->data);
+    debug_printf("len msg dans send chat %d",msg.len);
+    memcpy(msg.data,"Coucou une premier test\n",msg.len);
+    debug_printf("msg dans send  chat : %s  \n",msg.data);
     while(total < msg.len + 3){
-        if((r = send(thread->socket, &msg + total, sizeof(msg) - total, 0)) < 0){
+        if((r = send(thread->socket, &msg + total,(msg.len + 3 )- total, 0)) < 0){
             perror("error while sending chat message");
             return -1;
         }
@@ -505,7 +508,7 @@ void *receive_game_data_thread(ThreadArgs *args){
             // copy the data of the grid
             memcpy(thread->board->grid, buf + offset, grid_len);
             init_grid = true;
-            print_grille(thread->board);
+            //print_grille(thread->board);
 
             //setup_board(thread->board);
             debug_printf("CODEREQ_ID_EQ: %u", gamedata.codereq_id_eq);

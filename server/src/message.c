@@ -208,7 +208,7 @@ int recvTCP(int sock, void *buf, int size)
     if (nbr == 0)
     {
       perror("connexion fermé client in sendTCP");
-      return 1;
+      return 0;
     }
     total += nbr;
 
@@ -231,7 +231,9 @@ void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff)
     poll(activi,nfds,timeout);
     for(int i=0;i<nfds;i++){
       if(activi[i].fd!=-1 && activi[i].revents==POLLOUT){
-        sendTCP(activi[i].fd,buf,sizebuff);
+        if(sendTCP(activi[i].fd,buf,sizebuff)==1){
+          fds[i].fd=-1;
+        }
         activi[i].fd=-1;
         n++;
       }
@@ -259,6 +261,9 @@ void *sendCompleteBoard(void *args)
 
   while (1)
   {
+    if(*g->winner!=__INT32_MAX__ || g->lenplys==0){
+      break;
+    }
     An_Board an;
     an.entete = htons(11 << 3);
     an.num = htons(n);

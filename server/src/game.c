@@ -23,13 +23,6 @@ void free_game(Game *g)
 
 /* fonction pour liberer la memoire d'un tableau de type Game ,  */
 
-void free_games(Game **games, int len)
-{
-  for (int i = 0; i < len; i++)
-  {
-    free_game(games[i]);
-  }
-}
 
 int initgame(Game *g, char mode, int h, int w)
 {

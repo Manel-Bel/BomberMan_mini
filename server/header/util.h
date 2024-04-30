@@ -50,15 +50,12 @@ struct Player{
     int sockcom; // socket de communication client 
     int Ready; // pour savoir si le joueur est pret à jouer
     int pos[2]; // la position du joueur sur la grille
-    int *winner; // un seul winner for everyone
     pthread_cond_t *condwin;
     pthread_mutex_t *vicmutex;
     pthread_mutex_t *lockstats;
     A_R tabAction[SIZEACTION];
     int len; // le nombre d'action en cours;
     int stat; // 0:vivant(e) 1:mort(e) 
-    char *board;
-    int freq;
 };
 
 struct Bomber{
@@ -69,8 +66,6 @@ struct Bomber{
 struct Game{
   Player *plys[4];
   int lenplys; // nombre joueur en cours
-
-
   pthread_t thread;
   char mode; // game mode, 1: 4p , 2 : equipes;
   int sock_udp;

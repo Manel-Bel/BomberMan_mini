@@ -4,7 +4,6 @@
 #define H 20
 #define W 20
 #define nbrply 1
-#define freq 500 * 1000 // 500  ms
 #define TEXTSIZE 255
 
 /* à revoir*/
@@ -14,13 +13,15 @@ void *surveiller(void *args)
   argsurv *arg = (argsurv *)args;
   int winner;
   pthread_mutex_lock(arg->vicmutex);
-  if (*(arg->winner) == __INT_MAX__)
+  if (*(arg->winner) == INT32_MAX)
   {
     pthread_cond_wait(arg->condvic, arg->vicmutex);
     winner = *(arg->winner);
   }
   pthread_mutex_unlock(arg->vicmutex);
-  /*
+
+  if(winner>=0){
+    /*
                       0
   0  1  2  3  4  5  6  7  8  9  1  2  3  4       5
        CODEREQ=15 si 4p              | ID     | EQ
@@ -29,11 +30,15 @@ void *surveiller(void *args)
 
   */
 
-  Answer an;
-  winner = (arg->mode == 1) ? (winner << 1) : winner;
-  an.entete = htons(15 << 3 | winner);
+    Answer an;
+    winner = (arg->mode == 1) ? (winner << 1) : winner;
+    an.entete = htons(15 << 3 | winner);
 
-  for (int i = 0; i < nbrply; i++)
+  }
+  
+
+
+  for (int i = 0; i < 2; i++)
   {
     pthread_join(arg->tab[i], NULL);
   }
@@ -243,13 +248,16 @@ void *send_freqBoard(void *args)
   uint16_t n = 0;
   while (1)
   {
+    if(g->lenplys==0 || *g->winner!=INT32_MAX){
+      break;
+    }
 
     debug_printf("start sleep \n");
     clock_t debut, fin;
     double temps;
 
     debut = clock();
-    usleep(freq);
+    usleep(g->freq);
     fin = clock();
 
     temps = (double)(fin - debut) / CLOCKS_PER_SEC * 1000;
@@ -291,7 +299,7 @@ void *send_freqBoard(void *args)
               debug_printf("perform\n");
               debug_printf("action 0 à3 \n");
               action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i]);
-              print_grille_1D((g->board.grid));
+              //print_grille_1D((g->board.grid));
 
               moved = 1;
             }
@@ -331,7 +339,7 @@ void *send_freqBoard(void *args)
     }
 
     int nb = nbrDiff(g->board.grid, g->lastmultiboard);
-    printf("nombre de diff %d \n", nb);
+    //printf("nombre de diff %d \n", nb);
 
     /* puis on envoie le differenciel*/
 
@@ -357,32 +365,45 @@ void *send_freqBoard(void *args)
 
     n++;
   }
+  return NULL;
 }
 
-int readTchat(void *buf, int sock, int *size)
+int readTchat(uint8_t *buf, int sock, int *size)
 {
 
-  uint8_t *buffer=(uint8_t *)buf;
+  
   
   printf("start to read tchat message\n");
   int total=0;
 
-  if((total=recvTCP(sock, buf, 3))<=0){
+  if((total=recvTCP(sock, buf, 3))<0){
     return 1;
+  }else if( total==0){
+    return 0;
   }
   printf("recv taille recu %d \n ", total);
-  uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buffer);
+  uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buf);
+
+  printf("CODEREQ : %d\n",*CODEREQ_ID_REQ);
   uint8_t id_eq = ntohs(*CODEREQ_ID_REQ) & 0x7;
+   
 
   
   *CODEREQ_ID_REQ = htons(13 << 3 | id_eq);
 
-  uint8_t len = *(buffer + 2);
+ 
+
+  uint8_t len = *(buf + 2);
   *size = len;
   printf("len recu %d\n", len);
-  if(recvTCP(sock, buffer + 3, len)<=0){
+
+  if((total+=(recvTCP(sock, (buf + 3), len)))<=0){
     return 1;
   }
+
+  return total;
+
+
 }
 
 int insererAction(Player *p, A_R action)
@@ -600,12 +621,13 @@ void *server_game(void *args)
   pthread_mutex_t vboard = PTHREAD_MUTEX_INITIALIZER;
 
   int *winner = malloc(sizeof(int));
-  *(winner) = __INT_MAX__;
+  *(winner) = INT32_MAX;
 
   pthread_cond_t condwin;
   pthread_cond_init(&condwin, NULL);
   pthread_mutex_t vicmutex;
   pthread_mutex_init(&vicmutex, NULL);
+  g->winner=winner;
 
   // g->addr_mdiff = grvadr;
   // g->port_mdifff = port_mdiff;
@@ -623,12 +645,11 @@ void *server_game(void *args)
   /*put players on board*/
   putPlayersOnBoard(g);
 
-  /* waiting for sign of ready of players*/
+  /* waiting for ready signs of players*/
 
   debug_printf("attends le retour du client  ");
   waitingforReadySign(g);
   /* START GAME IF EVERYONE IS READY
-  One thread for everyone and one thread for surveillant
   */
 
   pthread_t thread_Board;
@@ -646,32 +667,22 @@ void *server_game(void *args)
     return NULL;
   }
 
-  pthread_t tab[nbrply + 1];
 
   pthread_mutex_t mutexstats[nbrply];
-  pthread_t surveillant;
 
   for (int i = 0; i < nbrply; i++)
   {
 
     pthread_mutex_init(mutexstats + i, NULL);
     g->plys[i]->lockstats = mutexstats + i;
-    debug_printf("le winner donné au joueur  %p\n", g->plys[0]->winner);
-    g->plys[i]->winner = winner;
     g->plys[i]->condwin = &condwin;
     g->plys[i]->vicmutex = &vicmutex;
     memset(g->plys[i]->tabAction, 0, 20 * sizeof(A_R));
     g->plys[i]->len = 0;
 
-    /* if (pthread_create(&tab[i], NULL, hanglingTchat, g) < 0)
-     {
-       perror( "problem of creation pthread");
-       return NULL;
-     }
-
-   */
+  
   }
-
+/*
   // create le thread surveillant
   argsurv *argsurvs = malloc(sizeof(argsurv));
   argsurvs->plys = g->plys;
@@ -681,14 +692,17 @@ void *server_game(void *args)
   argsurvs->winner = winner;
   argsurvs->vicmutex = &vicmutex;
   argsurvs->mode = g->mode;
-  argsurvs->statusthread = INT_MAX;
-  debug_printf("arg pointeur %p \n", argsurvs);
+  argsurvs->tab=tab;
+  
+  
+
 
   if (pthread_create(&surveillant, NULL, surveiller, argsurvs) < 0)
   {
     perror("problem de phtread_create");
     return NULL;
   }
+  */
   /*
   if (pthread_create(&thread_tchat, NULL, hanglingTchat, g) < 0)
   {
@@ -697,8 +711,11 @@ void *server_game(void *args)
   }
   */
 
-  struct pollfd fds[5];
-  memset(fds, 0, sizeof(struct pollfd) * 5);
+ int nbrplayeractive=g->lenplys;
+ printf("le nombre de joueur au depart %d\n",nbrplayeractive);
+
+  struct pollfd fds[g->lenplys+1];
+  memset(fds, 0, sizeof(struct pollfd) *(g->lenplys+1));
 
   for (int i = 0; i < g->lenplys; i++)
   {
@@ -708,22 +725,20 @@ void *server_game(void *args)
   fds[4].fd = g->sock_udp;
   fds[4].events = POLLIN;
 
-  void *bufTCHAT = malloc(1500);
-  memset(bufTCHAT, 0, 1500);
+  uint8_t bufTCHAT[TEXT_SIZE+3]; 
 
   while (1)
   {
-
-    // si le surveillant est encore active alors on continue de traiter les demandes actions
-    if (argsurvs->statusthread != INT_MAX)
-    {
+    if(nbrplayeractive==0 || *(g->winner)!=INT32_MAX){
+      printf("le nbrplayer est null\n");
       break;
     }
+
     poll(fds, 5, -1);
 
     for (int i = 0; i < 5; i++)
     {
-      if (fds[i].revents == POLLIN)
+      if (fds[i].fd!=-1 && fds[i].revents == POLLIN)
       {
         if (fds[i].fd == g->sock_udp)
         {
@@ -731,24 +746,54 @@ void *server_game(void *args)
         }
         else
         {
-          memset(bufTCHAT, 0, 1500);
-          int len;
-          if(readTchat(bufTCHAT, fds[i].fd, &len)==1){
-            debug_printf("prbleme de connexion client");
-          }else{
-            sendTCPtoALL(fds, 4, bufTCHAT, len);
-          }
+            memset(bufTCHAT, 0, TEXT_SIZE+3);
+            int len;
+            int r=0;
+            if((r=readTchat(bufTCHAT, fds[i].fd, &len))==0){
+              printf("prbleme de connexion client\n");
+              fds[i].fd=-1;
+              nbrplayeractive--;
+            }else if (r==1){
+              printf("prbleme de socket\n");
+                nbrplayeractive--;
+                fds[i].fd=-1;
+            }
+            else{
+              sendTCPtoALL(fds, g->lenplys, bufTCHAT, len+3);
+            }
         }
       }
     }
   }
-  debug_printf("avant le phtread surveillant ");
-  pthread_join(surveillant, NULL);
-  debug_printf("apres pthread_join");
+
+  printf("LE JEU EST FINI\n");
+  
+  //debug_printf("avant le phtread surveillant ");
+ /*pthread_cond_signal(&condwin);
+  pthread_join(surveillant, NULL);*/
+
+ // debug_printf("apres pthread_join");
+ if(*winner!=INT32_MAX){
+   Answer an;
+   
+    *winner = (g->mode == 1) ? (*winner << 1) : *winner;
+    an.entete = htons(15 << 3 | *winner);
+
+
+  sendTCPtoALL(fds,g->lenplys,&an,sizeof(an));
+
+ }else{
+  g->lenplys=0;
+ }
+
+ pthread_join(thread_Board,NULL);
+ pthread_join(thread_freqBoard,NULL);
 
   debug_printf("free winner");
+  printf("free winner \n");
+  free(winner);
+  printf("free game \n");
 
-  // free(winner);
   free_game(g);
 
   return NULL;
@@ -758,7 +803,7 @@ void *server_game(void *args)
 // 1 si une partie est lancé et joueur est integrer dans une nouvelle partie
 // 2 sinon
 
-int integrerORlancerPartie(Game **g, Player *pl, int mode, pthread_t *partie)
+int integrerORlancerPartie(Game **g, Player *pl, int mode,int freq)
 {
   if (*g == NULL)
   {
@@ -771,10 +816,14 @@ int integrerORlancerPartie(Game **g, Player *pl, int mode, pthread_t *partie)
     initgame(*g, mode, H, W);
   }
 
+  
+
   addPlayerInGame(*g, pl, nbrply);
   if ((*g)->lenplys == nbrply)
   {
-    if (pthread_create(partie, NULL, server_game, *g) < 0)
+    pthread_t game;
+    (*g)->freq=freq;
+    if (pthread_create(&game, NULL, server_game, *g) < 0)
     {
       perror("create pthread in main server");
       return 2;
@@ -800,7 +849,7 @@ void compactfds(struct pollfd *fds, nfds_t *nfds)
 }
 
 /* thread principal qui accepte que les demandes de connexion*/
-int main_serveur()
+int main_serveur(int freq)
 {
 
   /* pas communication entre les parties donc possibilité d'utiliser processus que processus leger*/
@@ -855,7 +904,6 @@ int main_serveur()
   Game *game_4p = NULL;
   Game *game_eq = NULL;
 
-  pthread_t a_surveiller[1024];
   int pos = 0;
 
   while (1)
@@ -932,12 +980,12 @@ int main_serveur()
             if (CODEREQ == 1)
             {
 
-              if ((r = integrerORlancerPartie(&game_4p, pl, CODEREQ, &a_surveiller[pos])) == 2)
+              if ((r = integrerORlancerPartie(&game_4p, pl, CODEREQ,freq)) == 2)
                 return 2;
             }
             else
             {
-              if ((r = integrerORlancerPartie(&game_eq, pl, CODEREQ, &a_surveiller[pos])) == 2)
+              if ((r = integrerORlancerPartie(&game_eq, pl, CODEREQ,freq)) == 2)
                 return 2;
             }
             fds[i].fd = -1;
@@ -975,7 +1023,7 @@ int main(int argc, char **argv)
 {
   if (argc >= 2)
   {
-    int v = main_serveur();
+    int v = main_serveur(atoi(argv[1])*1000);
     return v;
   }
   return 0;

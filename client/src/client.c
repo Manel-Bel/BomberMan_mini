@@ -400,6 +400,9 @@ int send_chat_message(const ThreadArgs *args){
         }
         total += r;
     }
+    //Clear the user input buffer
+    memset(thread->line->data, 0, TEXT_SIZE);
+    thread->line->cursor = 0;
     return 0;
 }
 
@@ -454,7 +457,8 @@ void *receive_chat_message(ThreadArgs * arg){
     // Update the message buffers
     strcpy(thread->line->last_msg2, thread->line->last_msg1);
     strcpy(thread->line->last_msg1, msg.data);
-    
+    debug_printf("receive_chat_message: last_msg2 %s",thread->line->last_msg2);
+    debug_printf("receive_chat_message: last_msg1 %s",thread->line->last_msg1);
     // TODO PRINT THOSE CHAT MSG 
     debug_printf("Chat msg Received:");
     debug_printf("CODEREQ: %u ID: %u", msg.codereq_id_eq >> 3, (msg.codereq_id_eq >> 3) & 0x3); // Extrait le CODEREQ id
@@ -581,9 +585,6 @@ ACTION input_thread(ThreadArgs * arg){
             r = QUIT;
             break;
         case '\n': 
-            // Clear the user input buffer
-            // memset(thread->line->data, 0, TEXT_SIZE);
-            // thread->line->cursor = 0;
             debug_printf("contenue de line dans input_thread %s", thread->line->data);
             r = TCHAT;
             debug_printf("msg send in tchat");

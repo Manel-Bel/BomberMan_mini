@@ -50,8 +50,7 @@ int main(int argc, char *argv[]){
     *msg = htons(*msg); // big indian format
 
     // send a request to join a game
-    if (send_message_2(socket_tcp, *msg) == 1)
-    {
+    if (send_message_2(socket_tcp, *msg) == 1){
         perror("Error send in main");
         goto end;
     }
@@ -152,18 +151,18 @@ int main(int argc, char *argv[]){
 
             if(fds[3].revents & POLLIN){ //STDIN ready to read
                 ACTION action_r = input_thread(&argsUdp);
-		if(action_r != NONE){
+		        if(action_r != NONE){
                 	debug_printf("action to send %d",action_r);
-			if(action_r == TCHAT){
+			        if(action_r == TCHAT){
                     		if(fds[0].revents & POLLOUT){
-			    		debug_printf("tcp ready");
+			    		        debug_printf("tcp ready");
                         		send_chat_message(&argsTcp);
-		    		}
+		    		        }
                 	}else{
-				if( fds[1].revents & POLLOUT)
-                        		send_action_udp(&argsUdp, action_r); //poll for socket 
-			}
-                }
+				        if(fds[1].revents & POLLOUT)
+                        	send_action_udp(&argsUdp, action_r); //poll for socket 
+			            }
+                    }
             }
         }
     }
@@ -201,8 +200,7 @@ int open_new_ter(const char *name){
     return fd;
 }
 
-int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp)
-{
+int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp){
     *socket_tcp = socket(AF_INET6, SOCK_STREAM, 0);
     if (*socket_tcp == -1)
     {
@@ -218,8 +216,7 @@ int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp)
 
     //*** try to connec to the server ***
     int r;
-    if ((r = connect(*socket_tcp, (struct sockaddr *)adr_tcp, sizeof(*adr_tcp))) == -1)
-    {
+    if ((r = connect(*socket_tcp, (struct sockaddr *)adr_tcp, sizeof(*adr_tcp))) == -1){
         perror("connexion fail");
         // close(*socket_tcp);
         return -1;
@@ -227,8 +224,7 @@ int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp)
     return 0;
 }
 
-int send_message_2(int socket_tcp, const uint16_t msg)
-{
+int send_message_2(int socket_tcp, const uint16_t msg){
     // send the information to the server
     ssize_t bytes_sent = 0;
     ssize_t r;
@@ -300,8 +296,7 @@ ServerMessage22 *extract_msg(void *buf)
     return msg;
 }
 
-void print_ServerMessage22(const ServerMessage22 *msg)
-{
+void print_ServerMessage22(const ServerMessage22 *msg){
     char buf[INET6_ADDRSTRLEN];
     debug_printf("\n-------------------------------");
     debug_printf("En-tête : %d ", msg->entete);
@@ -354,8 +349,7 @@ int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_dat
     return 0;
 }
 
-int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct sockaddr_in6 *addr_udp)
-{
+int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct sockaddr_in6 *addr_udp){
     // Initialiser la socket UDP
     debug_printf("init_udp_adr : init udp");
     if ((*sock_udp = socket(AF_INET6, SOCK_DGRAM, 0)) == -1)
@@ -382,8 +376,7 @@ int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct socka
     return 0;
 }
 
-int send_chat_message(const ThreadArgs *args)
-{
+int send_chat_message(const ThreadArgs *args){
     ThreadArgs *thread = (ThreadArgs *)args;
     ChatMessage msg;
     memset(&msg,0,sizeof(ChatMessage));
@@ -393,17 +386,15 @@ int send_chat_message(const ThreadArgs *args)
     
     ssize_t r;
     ssize_t total = 0; 
-    msg.len = strlen("Coucou une premier test\n");//strlen(thread->line->data);
-    debug_printf("len msg dans send chat %d",msg.len);
-    memcpy(msg.data,"Coucou une premier test\n",msg.len);
-    debug_printf("msg dans send  chat : %s  \n",msg.data);
+    msg.len = strlen(thread->line->data);
+    memcpy(msg.data,thread->line->data,msg.len);
+    debug_printf("msg dans send_chat_message: %s",msg.data);
     while(total < msg.len + 3){
         if((r = send(thread->socket, &msg + total,(msg.len + 3 )- total, 0)) < 0){
             perror("error while sending chat message");
             return -1;
         }
-        if (r == 0)
-        {
+        if (r == 0){
             perror("connexion closed by remote server");
             return -1;
         }
@@ -556,7 +547,7 @@ end:
 
 ACTION input_thread(ThreadArgs * arg){
     ThreadArgs *thread = (ThreadArgs *) arg;
-    ACTION  r =NONE ;
+    ACTION r = NONE;
     // while(game_running){
     int c;
     int prev_c = ERR;
@@ -568,7 +559,7 @@ ACTION input_thread(ThreadArgs * arg){
         }
         prev_c = c;
     }
-    switch(prev_c) {
+    switch(prev_c){
         case KEY_UP:
             r = UP;
             break;
@@ -591,8 +582,9 @@ ACTION input_thread(ThreadArgs * arg){
             strcpy(thread->line->last_msg1, thread->line->data);
 
             // Clear the user input buffer
-            memset(thread->line->data, 0, TEXT_SIZE);
-            thread->line->cursor = 0;
+            // memset(thread->line->data, 0, TEXT_SIZE);
+            // thread->line->cursor = 0;
+            debug_printf("contenue de line dans input_thread %s", thread->line->data);
             r = TCHAT;
             debug_printf("msg send in tchat");
             break;
@@ -614,6 +606,10 @@ ACTION input_thread(ThreadArgs * arg){
 }
 
 
+void clear_line_msg(Line *l){
+    l->cursor=0;
+    memset(l->data, 0, TEXT_SIZE);
+}
 int send_action_udp(const ThreadArgs* thread, ACTION action){
     //TODO: gerer codereq
     Action_msg msg;
@@ -625,8 +621,7 @@ int send_action_udp(const ThreadArgs* thread, ACTION action){
     msg.num_action = htons((num_msg << 3) | action);
 
     ssize_t bytes_sent = sendto(thread->socket, &msg, sizeof(msg), 0, (struct sockaddr *)(thread->addr_udp), sizeof(*(thread->addr_udp)));
-    if (bytes_sent <= 0)
-    {
+    if (bytes_sent <= 0){
         perror("Error while sending action in UDP");
         return -1;
     }

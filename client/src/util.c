@@ -1,7 +1,7 @@
 // Build with -lncurses option
 #include "../header/util.h"
 
-void setup_board(Board* board) {
+void setup_board(Board* board){
     int lines; int columns;
     getmaxyx(stdscr,lines,columns);
     debug_printf("ligne %d, colonne %d", lines, columns);
@@ -10,11 +10,11 @@ void setup_board(Board* board) {
     board->grid = calloc((board->w)*(board->h),sizeof(char));
 }
 
-void free_board(Board* board) {
+void free_board(Board* board){
     free(board->grid);
 }
 
-void print_grille(Board * b) {
+void print_grille(Board * b){
     int x,y;
     for (y = 0; y < b->h; y++) {
         for (x = 0; x < b->w; x++){
@@ -36,11 +36,11 @@ void print_grille(Board * b) {
 }
 
 
-int get_grid(Board* b, int x, int y) {
+int get_grid(Board* b, int x, int y){
     return b->grid[y*b->w + x];
 }
 
-void set_grid(Board* b, int x, int y, int v) {
+void set_grid(Board* b, int x, int y, int v){
     b->grid[y*b->w + x] = v;
 }
 void refresh_game(Board* b, Line* l) {

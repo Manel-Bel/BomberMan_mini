@@ -4,8 +4,7 @@
 #include "util.h"
 #include <poll.h>
 
-struct Request
-{
+struct Request{
   uint16_t entete;
 };
 typedef struct Request Request;
@@ -13,8 +12,7 @@ typedef struct Request Request;
 
 
 
-struct answerBoard
-{
+struct answerBoard{
   uint16_t entete;
   uint16_t num;
   uint8_t hauteur;
@@ -29,8 +27,7 @@ struct Answer{
 };typedef struct Answer Answer;
 
 
-struct Answer_Integ
-{
+struct Answer_Integ{
   int16_t entete;
   int16_t PORTUDP;
   int16_t PORTMDIFF;

@@ -368,8 +368,7 @@ void *send_freqBoard(void *args)
   return NULL;
 }
 
-int readTchat(uint8_t *buf, int sock, int *size)
-{
+int readTchat(uint8_t *buf, int sock, int *size){
 
   
   
@@ -384,8 +383,8 @@ int readTchat(uint8_t *buf, int sock, int *size)
   printf("recv taille recu %d \n ", total);
   uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buf);
 
-  printf("CODEREQ : %d\n",*CODEREQ_ID_REQ);
   uint8_t id_eq = ntohs(*CODEREQ_ID_REQ) & 0x7;
+  printf("CODEREQ : %d\n",ntohs(*CODEREQ_ID_REQ) >>3);
    
 
   
@@ -906,29 +905,24 @@ int main_serveur(int freq)
 
   int pos = 0;
 
-  while (1)
-  {
+  while (1){
 
     r = poll(fds, nfds, 0);
-    if (r < 0)
-    {
+    if (r < 0){
       perror("erreur de poll dans main_serveur");
       return 1;
     }
 
-    for (size_t i = 0; i < nfds; i++)
-    {
+    for (size_t i = 0; i < nfds; i++){
 
       // Si une socket est pret à lecture
-      if (fds[i].revents == POLLIN)
-      {
-        if (fds[i].fd == sock)
-        {
+      if (fds[i].revents == POLLIN){
+        if (fds[i].fd == sock){
 
           /* attente de la connexion */
           struct sockaddr_in6 addrclient;
           unsigned size = 0;
-          debug_printf("attends une connexoin");
+          debug_printf("attend une connexoin");
           int sockclient = accept(sock, (struct sockaddr *)&addrclient, &size);
           printf("sockclient %d \n ", sockclient);
 

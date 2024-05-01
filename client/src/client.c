@@ -449,6 +449,11 @@ int receive_chat_message(ThreadArgs * arg){
         }
         total += r;
     }
+    // Update the message buffers
+    strcpy(thread->line->last_msg2, thread->line->last_msg1);
+    strcpy(thread->line->last_msg1, msg.data);
+    debug_printf("receive_chat_message: last_msg2 %s",thread->line->last_msg2);
+    debug_printf("receive_chat_message: last_msg1 %s",thread->line->last_msg1);
     debug_printf("Chat msg Received totale :%d", total);
     debug_printf("CODEREQ: %u ID: %u", msg.codereq_id_eq >> 3, (msg.codereq_id_eq >> 3) & 0x3); // Extrait le CODEREQ id
     debug_printf("EQ: %u LEN: %u DATA: %s", msg.codereq_id_eq & 0x1,msg.len, msg.data); // Extrait EQ

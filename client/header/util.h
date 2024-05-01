@@ -22,7 +22,6 @@ typedef struct Board {
     uint8_t h;
     uint8_t w;
     uint8_t* grid;
-    uint8_t is_initialized;
 } Board;
 
 typedef struct Line {

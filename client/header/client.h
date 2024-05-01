@@ -52,6 +52,7 @@ typedef struct {
     Board *board;
     Line *line;
     struct sockaddr_in6 *addr_udp;
+    uint8_t *is_initialized;
 }ThreadArgs;
 
 //initialize the socket

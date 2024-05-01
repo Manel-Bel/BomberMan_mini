@@ -112,10 +112,12 @@ int main(int argc, char *argv[]){
     start_color();
     init_pair(1, COLOR_YELLOW, COLOR_BLACK); 
     
+    uint8_t is_initialized = 0;
+    
     //TODO un thread en background qui attend la grille puis affiche
-    ThreadArgs argsGame = {.socket = socket_multidiff, .player_data = player_data ,.board=board,.line=line};
-    ThreadArgs argsUdp = {.socket = socket_udp, .player_data = player_data ,.board = NULL,.line=line,.addr_udp = &addr_udp };
-    ThreadArgs argsTcp = {.socket = socket_tcp, .player_data = player_data ,.board = NULL,.line=line};
+    ThreadArgs argsGame = {.socket = socket_multidiff, .player_data = player_data ,.board=board,.line=line, .is_initialized = &is_initialized};
+    ThreadArgs argsUdp = {.socket = socket_udp, .player_data = player_data ,.board = NULL,.line=line,.addr_udp = &addr_udp, .is_initialized = &is_initialized };
+    ThreadArgs argsTcp = {.socket = socket_tcp, .player_data = player_data ,.board = NULL,.line=line, .is_initialized = &is_initialized};
     /*pthread_t threads[3];
         if(pthread_create(&threads[0], NULL, receive_game_data_thread,&argsGame) != 0){
             perror("Erreur creating thread");
@@ -464,7 +466,7 @@ void *receive_game_data_thread(ThreadArgs *args){
     GameData gamedata;
     ssize_t bytes_recv;
     bool init_grid = false;
-    if(!init_grid){
+    if(!*(thread->is_initialized)){
         // while(game_running){
         if((bytes_recv = recv(thread->socket, buf, sizeof(buf), 0)) > 0){
             memcpy(&gamedata.codereq_id_eq, buf, sizeof(uint16_t));
@@ -482,6 +484,7 @@ void *receive_game_data_thread(ThreadArgs *args){
             debug_printf("thread->board->h %d\n",thread->board->h);
             thread->board->w = (uint8_t)buf[offset+1];
             offset += 2; 
+
             debug_printf("h %u, l %u, suivant %u\n",buf[offset -2],buf[offset -1], buf[offset]); 
             //allocate memory for the grid
             grid_len = thread->board->h * thread->board->w;
@@ -493,12 +496,13 @@ void *receive_game_data_thread(ThreadArgs *args){
             }
             // copy the data of the grid
             memcpy(thread->board->grid, buf + offset, grid_len);
-            init_grid = true;
+            *thread->is_initialized = 1;
             //print_grille(thread->board);
 
             //setup_board(thread->board);
             debug_printf("receive_game_data_thread CODEREQ_ID_EQ: %u", gamedata.codereq_id_eq);
             debug_printf("receive_game_data_thread NUM: %u", gamedata.num);
+            refresh_game(thread->board, thread->line);
             goto end;
         }
         perror("Error on recv for game datafirst time ");
@@ -509,7 +513,7 @@ void *receive_game_data_thread(ThreadArgs *args){
         // while(game_running){
         grid_len = thread->board->h * thread->board->w;
         memset(buf,0,grid_len + 6);
-        if((bytes_recv = recv(thread->socket,buf,grid_len + 6,0)) <= 0){
+        if((bytes_recv = recv(thread->socket, buf, grid_len + 6, 0)) <= 0){
             perror("Error on recv for game data");
             goto end;
         }

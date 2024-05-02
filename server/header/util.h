@@ -1,6 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <net/if.h>
@@ -75,6 +76,7 @@ struct Player{
 
 struct Bomber{
   int pos[2]; // x:pos[0] et y :pos[1]
+  time_t start_time; // Bomb start time
   int coundown;
 };typedef struct Bomber Bomber;
 
@@ -99,7 +101,6 @@ struct Game{
 
   int freq;
   int num_bombs;  // Number of active bombs
-  int loop_counter;  // Counter for game loops
 };
 
 #endif

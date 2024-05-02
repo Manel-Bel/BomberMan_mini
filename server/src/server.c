@@ -734,10 +734,6 @@ void *server_game(void *args)
     }
     // Update bombs and handle explosions
     update_bombs(g);
-
-    // Increment the loop counter
-    g->loop_counter++;
-    
     handling_Action_Request(g);
   }
   debug_printf("avant le phtread surveillant ");

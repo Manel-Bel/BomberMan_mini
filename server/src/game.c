@@ -7,7 +7,7 @@ void plant_bomb(Game *g, int x, int y) {
         return;
     }
 
-    Bomber b = {{x, y}, 3};  // Countdown set to 3 seconds
+    Bomber b = {{x, y}, time(NULL), 3};  // Countdown set to 3 seconds
     g->tabbommber[g->num_bombs++] = b;
 }
 
@@ -68,21 +68,23 @@ void process_cell(Game *g, int x, int y) {
     }
 }
 
-
 void update_bombs(Game *g) {
+    time_t current_time = time(NULL);
+
     for (int i = 0; i < g->num_bombs; i++) {
         Bomber *b = &g->tabbommber[i];
 
-        // Update the countdown based on the loop counter
-        b->coundown -= (g->loop_counter % BOMB_COUNTDOWN_INTERVAL == 0);
+        // Calculate the elapsed time since the bomb was planted
+        time_t elapsed_time = current_time - b->start_time;
 
-        if (b->coundown == 0) {
+        if (elapsed_time >= b->coundown) {
             explode_bomb(g, b->pos[0], b->pos[1]);
-            // Remove the exploded bomb from the array
+            //remove the bomb from the array
             g->tabbommber[i] = g->tabbommber[--g->num_bombs];
         }
     }
 }
+
 
 
 /* fonction pour liberer la memoire de type Game */
@@ -117,7 +119,6 @@ void free_games(Game **games, int len)
 
 int initgame(Game *g, char mode, int h, int w)
 {
-  g->loop_counter = 0;
   g->lenplys = 0;
   g->thread = 0;
   g->mode = mode;

@@ -43,7 +43,7 @@ typedef enum {
 } CellType;
 
 
-typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
+typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT, PLACE_BOMB } ACTION;
 
 
 typedef struct Game Game;

@@ -44,7 +44,7 @@ void *surveiller(void *args);
 int serverUdp(int sock, int port);
 int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul);
 void cancellastmove(A_R *tab, int size);
-void action_perform(char *board, int x, int y, int action, int id);
+void action_perform(char *board, int x, int y, int action, int id, Game *g);
 int nbrDiff(char *board, char *board1);
 void fillDiff(char *buff, char *b, char *bdiff);
 void *send_freqBoard(void *args);

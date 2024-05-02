@@ -533,6 +533,9 @@ ACTION input_thread(ThreadArgs * arg){
         prev_c = c;
     }
     switch(prev_c) {
+        case KEY_SHOME:
+            r = BOMB;
+            break;
         case KEY_UP:
             r = UP;
             break;

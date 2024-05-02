@@ -117,7 +117,7 @@ void cancellastmove(A_R *tab, int size)
   }
 }
 
-void action_perform(char *board, int x, int y, int action, int id)
+void action_perform(char *board, int x, int y, int action, int id, Game *game)
 {
   int numcaseply = 5 + id;
 
@@ -162,15 +162,21 @@ void action_perform(char *board, int x, int y, int action, int id)
       }
 
       break;
-    default:
-      if (x <= 0)
-      {
-        return;
-      }
+    case 3:
       board[y * W + x] -= numcaseply;
       if (board[y * W + (x - 1)] == 0)
       {
         board[y * W + (x - 1)] = numcaseply;
+      }
+      break;
+    case 4:
+      board[y * W + x] = 3; //la case contient une bombe
+      plant_bomb(game, x, y);
+      break;
+    default:
+      if (x <= 0)
+      {
+        return;
       }
     }
   }
@@ -272,13 +278,13 @@ void *send_freqBoard(void *args)
             moved = 1;
             debug_printf("perform");
             printf("action 3");
-            action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, i);
+            action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, i, g);
             print_grille_1D((g->board.grid));
             break;
           case 4:
             bombered = 1;
 
-            action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, i);
+            action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, i, g);
             break;
           case 5:
             if (!moved)

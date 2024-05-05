@@ -303,7 +303,7 @@ void *send_freqBoard(void *args)
             {
               debug_printf("perform\n");
               debug_printf("action 0 à3 \n");
-              action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i]);
+              action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i], g);
               //print_grille_1D((g->board.grid));
 
               moved = 1;
@@ -733,8 +733,6 @@ void *server_game(void *args)
 
   while (1)
   {
-    // Update bombs and handle explosions
-    update_bombs(g);
     if(nbrplayeractive==0 || *(g->winner)!=INT32_MAX){
       printf("le nbrplayer est null\n");
       break;
@@ -770,6 +768,8 @@ void *server_game(void *args)
         }
       }
     }
+    // Update bombs and handle explosions
+    update_bombs(g);
   }
 
   printf("LE JEU EST FINI\n");

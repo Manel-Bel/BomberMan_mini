@@ -122,7 +122,7 @@ ACTION control(Line* l) {
     }
     ACTION a = NONE;
     switch (prev_c) {
-        // case KEY_SHOME:
+        // case KEY_BACKSPACE:
         //     a = BOMB; break;
         case ERR: break;
         case KEY_LEFT:

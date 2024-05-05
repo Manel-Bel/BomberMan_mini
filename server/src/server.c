@@ -159,12 +159,16 @@ void action_perform(uint8_t *board, int x, int y, int action, Player *p, Game *g
       y2++;
 
       break;
-    default:
+    case 3:
       if (x <= 0)
       {
         return;
       }
       x2--;
+    case 4:
+      board[y * W + x] = 3; //la case contient une bombe
+      plant_bomb(game, x, y);
+    default:
     }
 
     if (!board[(y2)*W + x2])
@@ -175,10 +179,7 @@ void action_perform(uint8_t *board, int x, int y, int action, Player *p, Game *g
         board[y2 * W + x2] = numcaseply;
         p->pos[0] = x2;
         p->pos[1] = y2;
-      }else if(action==4){
-        board[y * W + x] = 3; //la case contient une bombe
-        plant_bomb(game, x, y);
-      }else debug_printf("action inconnue %d\n", action);
+      }
     }
   }
   else

@@ -122,6 +122,8 @@ ACTION control(Line* l) {
     }
     ACTION a = NONE;
     switch (prev_c) {
+        // case KEY_SHOME:
+        //     a = BOMB; break;
         case ERR: break;
         case KEY_LEFT:
             a = LEFT; break;
@@ -148,6 +150,7 @@ bool perform_action(Board* b, Pos* p, ACTION a) {
     int xd = 0;
     int yd = 0;
     switch (a) {
+        // case BOMB:
         case LEFT:
             xd = -1; yd = 0; break;
         case RIGHT:

@@ -1,7 +1,93 @@
 #include "../header/game.h"
+#define DEAD 1
+
+void plant_bomb(Game *g, int x, int y) {
+    if (g->num_bombs >= SIZEBOMBER) {
+        // Maximum number of bombs already active
+        return;
+    }
+
+    Bomber b = {{x, y}, time(NULL), 3};  // Countdown set to 3 seconds
+    g->tabbommber[g->num_bombs++] = b;
+}
+
+void explode_bomb(Game *g, int x, int y) {
+    int blast_radius = 2; // Adjust this value as per your game rules
+
+    // Remove destructible walls, players, and mark explosions in the blast radius
+    for (int k = 0; k <= blast_radius; k++) {
+        // Horizontal and vertical lines
+        for (int i = -k; i <= k; i++) {
+            int nx = x + i;
+            int ny = y;
+            process_cell(g, nx, ny);
+
+            nx = x;
+            ny = y + i;
+            process_cell(g, nx, ny);
+        }
+    }
+    // Diagonal lines
+    process_cell(g, x - 1, y - 1);
+    process_cell(g, x + 1, y - 1);
+    process_cell(g, x - 1, y + 1);
+    process_cell(g, x + 1, y + 1);
+
+
+    // Update the game board to mark the bomb location as an explosion
+    g->board.grid[y * g->board.w + x] = EXPLOSION;
+}
+
+void process_cell(Game *g, int x, int y) {
+    // Check if the current cell is within the game board boundaries
+    if (x >= 0 && x < g->board.w && y >= 0 && y < g->board.h) {
+        int *cell = &g->board.grid[y * g->board.w + x];
+        int player_index;
+        switch (*cell) {
+            case DESTRUCTIBLE_WALL:
+                // Remove the destructible wall and mark as an explosion
+                *cell = EXPLOSION;
+                break;
+            case INDESTRUCTIBLE_WALL:
+                // Stop the explosion in this direction
+                break;
+            case PLAYER_START ... PLAYER_END:
+                // Remove the player from the game
+                player_index = *cell - (PLAYER_START);
+                g->plys[player_index]->stat = DEAD;
+                *cell = EXPLOSION;
+                break;
+            case EMPTY:
+                // Mark the cell as an explosion
+                *cell = EXPLOSION;
+                break;
+            case EXPLOSION:
+                // Continue the explosion chain reaction
+                break;
+        }
+    }
+}
+
+void update_bombs(Game *g) {
+    time_t current_time = time(NULL);
+
+    for (int i = 0; i < g->num_bombs; i++) {
+        Bomber *b = &g->tabbommber[i];
+
+        // Calculate the elapsed time since the bomb was planted
+        time_t elapsed_time = current_time - b->start_time;
+
+        if (elapsed_time >= b->coundown) {
+            explode_bomb(g, b->pos[0], b->pos[1]);
+            //remove the bomb from the array
+            g->tabbommber[i] = g->tabbommber[--g->num_bombs];
+        }
+    }
+}
+
+
 
 /* fonction pour liberer la memoire de type Game */
-
 void free_player(Player *p)
 {
   close(p->sockcom);
@@ -26,7 +112,6 @@ void free_game(Game *g)
 
 int initgame(Game *g, char mode, int h, int w)
 {
-
   g->lenplys = 0;
   g->thread = 0;
   g->mode = mode;

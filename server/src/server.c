@@ -121,7 +121,7 @@ void cancellastmove(A_R *tab, int size)
   }
 }
 
-void action_perform(uint8_t *board, int x, int y, int action, Player *p)
+void action_perform(uint8_t *board, int x, int y, int action, Player *p, Game *game)
 {
   int numcaseply = 5 + p->id;
 
@@ -169,11 +169,16 @@ void action_perform(uint8_t *board, int x, int y, int action, Player *p)
 
     if (!board[(y2)*W + x2])
     {
-      debug_printf("action realisé %d\n", action);
-      board[y * W + x] = 0;
-      board[y2 * W + x2] = numcaseply;
-      p->pos[0] = x2;
-      p->pos[1] = y2;
+      if(action<=3){
+        debug_printf("action realisé %d\n", action);
+        board[y * W + x] = 0;
+        board[y2 * W + x2] = numcaseply;
+        p->pos[0] = x2;
+        p->pos[1] = y2;
+      }else if(action==4){
+        board[y * W + x] = 3; //la case contient une bombe
+        plant_bomb(game, x, y);
+      }else debug_printf("action inconnue %d\n", action);
     }
   }
   else
@@ -309,7 +314,7 @@ void *send_freqBoard(void *args)
 
             if (!bombered)
             {
-              action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i]);
+              action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i], g);
               bombered = 1;
             }
 
@@ -728,6 +733,8 @@ void *server_game(void *args)
 
   while (1)
   {
+    // Update bombs and handle explosions
+    update_bombs(g);
     if(nbrplayeractive==0 || *(g->winner)!=INT32_MAX){
       printf("le nbrplayer est null\n");
       break;

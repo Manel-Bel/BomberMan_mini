@@ -5,6 +5,9 @@
 #include "server.h"
 #include "grille_test.h"
 
+void update_bombs(Game *g);
+void explode_bomb(Game *g, int x, int y);
+void plant_bomb(Game *g, int x, int y);
 int initgame(Game *g,char mode,int h,int w);
 void free_games(Game **games, int len);
 void free_game(Game *g);

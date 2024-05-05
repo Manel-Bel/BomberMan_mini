@@ -1,6 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <time.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <net/if.h>
@@ -29,8 +30,20 @@
 #define PORT_PRINCIPAL 2024
 #define SIZEACTION 20
 #define SIZEBOMBER 40
+#define BOMB_COUNTDOWN_INTERVAL 100 // 3 s/30,000μs = 3,000 ms/30 ms = 100
 
-typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT } ACTION;
+typedef enum {
+    EMPTY = 0,
+    INDESTRUCTIBLE_WALL = 1,
+    DESTRUCTIBLE_WALL = 2,
+    BOMB = 3,
+    EXPLOSION = 4,
+    PLAYER_START = 5,
+    PLAYER_END = 9 //player0=5,player1=6,player2=7,player3=8
+} CellType;
+
+
+typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT, PLACE_BOMB } ACTION;
 
 
 typedef struct Game Game;
@@ -60,6 +73,7 @@ struct Player{
 
 struct Bomber{
   int pos[2]; // x:pos[0] et y :pos[1]
+  time_t start_time; // Bomb start time
   int coundown;
 };typedef struct Bomber Bomber;
 
@@ -81,7 +95,7 @@ struct Game{
   int *winner;
 
   int freq;
-
+  int num_bombs;  // Number of active bombs
 };
 
 #endif

@@ -19,6 +19,9 @@ int main(int argc, char *argv[]){
     Board *board = malloc(sizeof(Board));
     uint8_t is_initialized = 0;
     Line *line = malloc(sizeof(Line));
+
+    if(line == NULL)
+        goto end;
     memset(line, '\0', sizeof(*line));
 
 
@@ -109,18 +112,7 @@ int main(int argc, char *argv[]){
         goto end;
     debug_printf("je crois debut de la partie");
 
-    // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
-    initscr();
-    raw();
-    intrflush(stdscr, FALSE);
-    keypad(stdscr, TRUE);
-    nodelay(stdscr, TRUE);
-    noecho();
-    curs_set(0);
-    start_color();
-    init_pair(1, COLOR_YELLOW, COLOR_BLACK); 
-    init_pair(2, COLOR_GREEN, COLOR_BLACK);
-    init_pair(3, COLOR_BLUE, COLOR_BLACK);
+    init_interface();
 
     
     //TODO un thread en background qui attend la grille puis affiche
@@ -216,6 +208,24 @@ int open_new_ter(const char *name){
     }
     close(fd);
     return 1;
+}
+
+void init_interface(){
+    // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
+    initscr();
+    raw();
+    intrflush(stdscr, FALSE);
+    keypad(stdscr, TRUE);
+    nodelay(stdscr, TRUE);
+    noecho();
+    curs_set(0);
+    start_color();
+    init_pair(1, COLOR_YELLOW, COLOR_BLACK); 
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    init_pair(3, COLOR_BLUE, COLOR_BLACK);
+    init_pair(4, COLOR_RED, COLOR_BLACK);
+    init_pair(5, COLOR_WHITE, COLOR_BLACK);
+
 }
 
 int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp){
@@ -405,6 +415,7 @@ void* receive_chat_message(void *arg){
             debug_printf("receive_chat_message: nrmlm 3: %d",r);
             msg->codereq_id_eq = ntohs(msg->codereq_id_eq);
             uint16_t codereq = msg->codereq_id_eq >> 3;
+            int id = (msg->codereq_id_eq >> 1) & 0x3;
             debug_printf("receive_chat_message codereq %u",codereq);
             if(codereq > 14){
                 //TODO: handle the winner id 
@@ -418,15 +429,17 @@ void* receive_chat_message(void *arg){
                 game_running = 0;
                 goto end;
             }
-
+            thread->line->id_last_msg2 = thread->line->id_last_msg1;
             strcpy(thread->line->last_msg2, thread->line->last_msg1);
+
+            thread->line->id_last_msg1 = (id % 4) + 1;
             strcpy(thread->line->last_msg1, msg->data);
             debug_printf("receive_chat_message: last_msg2 %s",thread->line->last_msg2);
 
             debug_printf("receive_chat_message: last_msg1 %s\n",thread->line->last_msg1);
 
 
-            debug_printf("CODEREQ: %u ID: %u", msg->codereq_id_eq >> 3, (msg->codereq_id_eq >> 3) & 0x3); // Extrait le CODEREQ id
+            debug_printf("CODEREQ: %u ID: %u", codereq, id); // Extrait le CODEREQ id
             debug_printf("EQ: %u LEN: %u DATA: %s", msg->codereq_id_eq & 0x1,msg->len, msg->data); // Extrait EQ
         
             refresh_game(thread->board, thread->line);
@@ -635,6 +648,7 @@ ACTION input_thread(ThreadArgs * arg){
 void clear_line_msg(Line *l){
     l->cursor = 0;
     memset(l->data, 0, TEXT_SIZE);
+    l->for_team = 0;
     debug_printf("msg in line cleared");
 }
 

@@ -57,8 +57,8 @@ typedef struct {
 
 //initialize the socket
 int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp);
-int send_message_2(int socket_tcp, const uint16_t msg);
-ServerMessage22 *extract_msg(void *buf);
+// int send_message_2(int socket_tcp, const uint16_t msg);
+// ServerMessage22 *extract_msg(void *buf);
 ServerMessage22* receive_info(int socket_tcp);
 void print_ServerMessage22(const ServerMessage22* msg);
 int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr);
@@ -70,6 +70,7 @@ int send_action_udp(const ThreadArgs* thread, ACTION action);
 ACTION input_thread(ThreadArgs* arg);
 int open_new_ter(const char *name);
 void clear_line_msg(Line *l);
+void init_interface();
 
 int isInList(const char c, const char *list);
 

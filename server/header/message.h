@@ -3,6 +3,8 @@
 
 #include "util.h"
 #include <poll.h>
+#include "game.h"
+#include "player.h"
 
 struct Request
 {
@@ -57,7 +59,7 @@ void *sendCompleteBoard(void *args);
 void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff);
 int recvTCP(int sock, void *buf, int size);
 int sendTCP(int sock, void *buf, int size);
-int  recvRequestReady(int sock,char mode);
+int recvRequestReady(int sock,char mode);
 int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
 
 

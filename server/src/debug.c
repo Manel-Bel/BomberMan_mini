@@ -1,5 +1,5 @@
 #include "../header/debug.h"
-#define DEBUG 0
+#define DEBUG 1
 // print the formated messages if DEBUG=1
 void debug_printf(const char *format, ...)
 {

@@ -1,13 +1,33 @@
 #include "../header/game.h"
 
-/* fonction pour liberer la memoire de type Game */
 
-void free_player(Player *p)
+
+
+
+/*retourne 0 si l'ajout est reussi ,1 sinon*/
+int addPlayerInGame(Game *g,int sock, int nbrply)
 {
-  close(p->sockcom);
-  pthread_mutex_destroy(p->lockstats);
-  free(p);
-}
+
+    if (g->lenplys >= nbrply)
+    {
+
+      return 1;
+    }
+    int idEq = (g->mode == 2 && g->lenplys > 1) ? 1 : 0;
+    Player *p=createplayer(g->lenplys,sock, idEq);
+    if(p==NULL) return 1;
+    g->plys[g->lenplys]=p;
+    g->lenplys += 1;
+    return 0;
+  }
+
+
+
+
+
+
+
+
 
 void free_game(Game *g)
 {
@@ -20,6 +40,71 @@ void free_game(Game *g)
 
   free(g);
 }
+
+/* preparer le serverMultiCast et rempli adr. multicast dans le pointeur adr_mul
+  return 0 si reussi , 1 sinon
+*/
+
+int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul)
+{
+
+  int ok = 1;
+  if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0)
+  {
+    perror("echec de SO_REUSSEADDR");
+    close(sock);
+    return 1;
+  }
+
+  /*prepare IPv6 for multicast*/
+
+  struct in6_addr adr;
+  generateAdrMultidiff(&adr);
+
+  /*prepare adresse for multicast */
+  struct sockaddr_in6 grvadr;
+  memset(&grvadr, 0, sizeof(grvadr));
+  grvadr.sin6_family = AF_INET6;
+  grvadr.sin6_addr = adr;
+  grvadr.sin6_port = htons(port);
+  int ifindex = if_nametoindex("eth0");
+  grvadr.sin6_scope_id = ifindex;
+
+  memcpy(adr_mul, &grvadr, sizeof(struct sockaddr_in6));
+
+  return 0;
+}
+
+
+/* permet de effectuer les etapes d'une serverudp , return 0 si reussi, 1 sinon*/
+
+int serverUdp(int sock, int port)
+{
+
+  struct sockaddr_in6 udp_addr;
+  memset(&udp_addr, 0, sizeof(udp_addr));
+  udp_addr.sin6_family = AF_INET6;
+  udp_addr.sin6_addr = in6addr_any;
+  udp_addr.sin6_port = htons(port);
+
+  int ok = 1;
+  if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0)
+  {
+    perror("echec de SO_REUSSEADDR");
+    close(sock);
+    return 1;
+  }
+
+  if (bind(sock, (struct sockaddr *)&udp_addr, sizeof(udp_addr)) < 0)
+  {
+    perror("probleme de bind");
+    close(sock);
+    return 1;
+  }
+
+  return 0;
+}
+
 
 /* fonction pour liberer la memoire d'un tableau de type Game ,  */
 
@@ -61,6 +146,7 @@ int initgame(Game *g, char mode, int h, int w)
   /* preparer socket pour UDP*/
   g->sock_udp = socket(PF_INET6, SOCK_DGRAM, 0);
   debug_printf("sock_udp %d \n", g->sock_udp);
+
   if (g->sock_udp < 0)
   {
     perror("creation sock_udp");
@@ -104,59 +190,7 @@ int initgame(Game *g, char mode, int h, int w)
   return 0;
 }
 
-/*retourne 0 si l'ajout est reussi ,1 sinon*/
-int addPlayerInGame(Game *g, Player *pl, int nbrply)
-{
 
-    if (g->lenplys >= nbrply)
-    {
+ 
 
-      return 1;
-    }
-    int idEq = (g->mode == 2 && g->lenplys > 1) ? 1 : 0;
-    initplayer(pl, g->lenplys, idEq);
-    g->plys[g->lenplys] = pl;
-    g->lenplys += 1;
-    return 0;
-  }
-  /*
-  int addPlayerInGames(Game **games, int *pos, Player *pl, char mode, int nbrplys, int h, int w)
-  {
-
-    int task = -1;
-
-    if (!games[*pos] || (task = auxaddplyer(games[*pos], pl, nbrplys)))
-    {
-
-      Game *g = malloc(sizeof(struct Game));
-      if (g == NULL)
-      {
-        perror("Dans initgame:malloc pour Game");
-        return 1;
-      }
-
-      initgame(g, mode, h, w);
-
-      // si echec alors on increment la compteur du tableau pour qu'il pointe tjr sur le dernier element
-
-      if (task == 1)
-      {
-        (*pos) += 1;
-      }
-      auxaddplyer(g, pl, nbrplys);
-
-      games[*pos] = g;
-    }
-
-    return 0;
-  }
-  */
-
-  void initplayer(Player * p, int id, int idEq)
-  {
-
-    p->id = id;
-    p->idEq = idEq;
-    p->Ready = 0;
-    p->len = 0;
-  }
+ 

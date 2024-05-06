@@ -228,6 +228,7 @@ int send_message_2(int socket_tcp, const uint16_t msg){
     // send the information to the server
     ssize_t bytes_sent = 0;
     ssize_t r;
+    debug_printf("start to send_message_2\n");
     while (bytes_sent < 2)
     {
         r = send(socket_tcp, &msg + bytes_sent, sizeof(msg) - bytes_sent, 0);
@@ -238,6 +239,7 @@ int send_message_2(int socket_tcp, const uint16_t msg){
         }
         bytes_sent += r;
     }
+    debug_printf("total message 2 send %d\n",bytes_sent);
     return 0;
 }
 

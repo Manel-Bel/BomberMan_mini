@@ -105,10 +105,7 @@ void generateAdrMultidiff(struct in6_addr *addr)
 
 int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff){
 
-    /* fill player */
-    //p->addr_mdiff=add;
-    //p->port_udp=port_udp;
-    //p->port_mdifff=port_mdiff;
+   
 
     /*send answer*/
     An_In an;
@@ -119,14 +116,9 @@ int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_
     printf("an.entete %d\n",ntohs(an.entete));
     an.PORTUDP=htons(port_udp);
     an.PORTMDIFF=htons(port_mdiff);
-    size_t totaloctet=0;
-    while(totaloctet<sizeof(an)){
-        int nbr=send(p->sockcom,&an,sizeof(an),0);
-        if(nbr<=0){
-            perror("problem of send in sendPlayerInfo");
-            return 1;
-        }
-        totaloctet+=nbr;
+    int r=sendTCP(p->sockcom,&an,sizeof(an));
+    if(r<2){
+      return 1;
     }
 
     return 0;
@@ -220,16 +212,16 @@ int recvTCP(int sock, void *buf, int size)
 void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff)
 {
   int timeout=100;
-  int n=0;
+  size_t n=0;
   struct pollfd activi[nfds];
   memcpy(activi,fds,nfds*sizeof(struct pollfd));
-  for(int i=0;i<nfds;i++){
+  for(size_t i=0;i<nfds;i++){
     activi[i].events=POLLOUT;
   }
 
   while(n<nfds){
     poll(activi,nfds,timeout);
-    for(int i=0;i<nfds;i++){
+    for(size_t i=0;i<nfds;i++){
       if(activi[i].fd!=-1 && activi[i].revents==POLLOUT){
         if(sendTCP(activi[i].fd,buf,sizebuff)==1){
           fds[i].fd=-1;

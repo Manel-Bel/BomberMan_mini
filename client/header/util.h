@@ -29,6 +29,7 @@ typedef struct Line {
     int cursor;
     char last_msg1[TEXT_SIZE];
     char last_msg2[TEXT_SIZE];
+    uint8_t for_team;
 } Line;
 
 typedef struct Pos{

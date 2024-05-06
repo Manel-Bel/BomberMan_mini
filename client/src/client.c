@@ -1,84 +1,85 @@
 #include "../header/client.h"
 
 int game_running = 1;
-struct pollfd fds[MAX_FDS];
 
 int main(int argc, char *argv[]){
-    char * redirection;
+    char rep;
+    char *redirection;
+    uint16_t header_2bytes;
+
     if(argc == 2)
         redirection = argv[1];
     else  //else redirect to tmp file
         redirection = "/tmp/output.txt";
-    int ter;
-    ter = open_new_ter(redirection);
+
+    // int ter;
+    // ter =
+    open_new_ter(redirection);
+
+    Board *board = malloc(sizeof(Board));
+    uint8_t is_initialized = 0;
+    Line *line = malloc(sizeof(Line));
+    memset(line, '\0', sizeof(*line));
+
 
     int socket_tcp;
     struct sockaddr_in6 adr_tcp;
-    Board *board = malloc(sizeof(Board));
-    Line *line = malloc(sizeof(Line));
-    memset(line, '\0', sizeof(*line));
     int socket_udp;
     int socket_multidiff;
     struct sockaddr_in6 addr_udp;
     struct sockaddr_in6 addr_recv_multicast;
+    ServerMessage22 *player_data = NULL;
 
     if (connect_to_server(&socket_tcp, &adr_tcp) == -1)
-        return 1;
+        goto end;
 
     debug_printf("the socket is %d", socket_tcp);
-    char rep;
     printf("Ready to connect to the new game ?y /n\n");
-    fflush(stdin);
-    rep = getchar();
-    printf("which partie do you want to play ?: s for solo game else will be in a group  of two\n");
-    rep = ' ';
-    do{
-        printf("Enter the response : \n");
-        fflush(stdin);
-        scanf(" %c", &rep);
-    }while(((rep != 's' && rep != 'S') && (rep != 'g' && rep != 'G')));
+    read_input_char(&rep, "yn");
+    if ((rep == 'n') || (rep == 'N'))
+        goto end;
 
-    uint16_t *msg = malloc(2);
-    *msg = 0;
+    printf("which partie do you want to play ?: s for solo game else g \n");
+    read_input_char(&rep, "sSgG");
+
     if (rep == 's' || rep == 'S')
-        *msg = 1 << 3; // Mode solo
+        header_2bytes = 1 << 3; // Mode solo
     else
-        *msg = 2 << 3; // Mode groupe de deux
+        header_2bytes = 2 << 3; // Mode groupe de deux
 
-    printf("main : msg à envoyé %d\n", *msg);
-    *msg = htons(*msg); // big indian format
+    debug_printf("main : header_2bytes à envoyé %d", header_2bytes);
+    header_2bytes = htons(header_2bytes);
 
     // send a request to join a game
-    if (send_message_2(socket_tcp, *msg) == 1){
+    // if (send_message_2(socket_tcp, header_2bytes) == 1)
+    if (send_tcp(socket_tcp, &header_2bytes, 2) == -1){
         perror("Error send in main");
         goto end;
     }
-    free(msg);
 
-    ServerMessage22 *player_data = receive_info(socket_tcp);
+    player_data = receive_info(socket_tcp);
     if (player_data == NULL)
         goto end;
 
     print_ServerMessage22(player_data);
 
-   
+    struct pollfd fds[MAX_FDS];
+    fds[0].fd = STDIN_FILENO;
+    fds[0].events = POLLIN;
+
+    fds[1].fd = socket_udp;
+    fds[1].events = POLLOUT;
+    fds[2].fd = socket_tcp;
+    fds[2].events = POLLOUT;
+    // fds[3].fd = socket_multidiff;
+    // fds[3].events = POLLIN;
+
+
     if(init_udp_adr(&socket_udp, player_data, &addr_udp) == -1)
         goto end;
     // s'abonner à l'adresse de multidiffusion du serveur pour recevoir les messages des autres
     if (subscribe_multicast(&socket_multidiff, player_data, &addr_recv_multicast) == -1)
         goto end;
-    fds[0].fd = socket_tcp;
-    fds[0].events = POLLIN | POLLOUT;
-    fds[1].fd = socket_udp;
-    fds[1].events = POLLOUT | POLLIN;
-    fds[2].fd = socket_multidiff;
-    fds[2].events = POLLIN;
-    fds[3].fd = STDIN_FILENO;
-    fds[3].events = POLLIN;
-
-    printf("are you ready to start the game ?\n");
-    fflush(stdin);
-    rep = getchar();
 
     // Extraction du champ codereq (13 bits de poids fort)
     uint16_t codereq = player_data->entete >> 3;
@@ -94,10 +95,17 @@ int main(int argc, char *argv[]){
     }else{
         codereq = 4 << 3;
     }
-    uint16_t header_2bytes = htons(codereq | (id << 1) | eq);
+    header_2bytes = htons(codereq | (id << 1) | eq);
 
-    // tell the server i'am ready to play
-    if (send_message_2(socket_tcp, header_2bytes) == -1)
+    printf("are you ready to start the game?y or n \n");
+
+    read_input_char(&rep, "yYnN");
+    if ((rep == 'n') || (rep == 'N'))
+        goto end;
+
+    // tell the server i am ready to play
+    // if (send_message_2(socket_tcp, header_2bytes) == -1)
+    if (send_tcp(socket_tcp, &header_2bytes, 2) == -1)
         goto end;
     debug_printf("je crois debut de la partie");
 
@@ -111,67 +119,73 @@ int main(int argc, char *argv[]){
     curs_set(0);
     start_color();
     init_pair(1, COLOR_YELLOW, COLOR_BLACK); 
-    
-    uint8_t is_initialized = 0;
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    init_pair(3, COLOR_BLUE, COLOR_BLACK);
+
     
     //TODO un thread en background qui attend la grille puis affiche
     ThreadArgs argsGame = {.socket = socket_multidiff, .player_data = player_data ,.board=board,.line=line, .is_initialized = &is_initialized};
-    ThreadArgs argsUdp = {.socket = socket_udp, .player_data = player_data ,.board = NULL,.line=line,.addr_udp = &addr_udp, .is_initialized = &is_initialized };
-    ThreadArgs argsTcp = {.socket = socket_tcp, .player_data = player_data ,.board = NULL,.line=line, .is_initialized = &is_initialized};
-    /*pthread_t threads[3];
-        if(pthread_create(&threads[0], NULL, receive_game_data_thread,&argsGame) != 0){
-            perror("Erreur creating thread");
-            goto end;
-        }
-        //TO DO un thread d'action en udp
-        if(pthread_create(&threads[1], NULL, input_thread,&argsUdp) != 0){
-            perror("Erreur creating thread for input ");
-            goto end;
-        }
-        if(pthread_create(&threads[2], NULL, receive_chat_message,&argsTcp) != 0){
-            perror("Erreur creating thread");
-            goto end;
-        }
-    */
-   int result;
-    while(1){
+    ThreadArgs argsUdp = {.socket = socket_udp, .player_data = player_data ,.board = board,.line=line,.addr_udp = &addr_udp, .is_initialized = &is_initialized };
+    ThreadArgs argsTcp = {.socket = socket_tcp, .player_data = player_data ,.board = board,.line=line, .is_initialized = &is_initialized};
+    int nbthreads = 2;
+    // pthread_t threads[nbthreads]; does not compile because of the label end
+    pthread_t threads[2];
+    if(pthread_create(&threads[0], NULL, receive_game_data_thread,&argsGame) != 0){
+        perror("Erreur creating thread");
+        goto end;
+    }
+    // //TO DO un thread d'action en udp
+    // if(pthread_create(&threads[1], NULL, input_thread,&argsUdp) != 0){
+    //     perror("Erreur creating thread for input ");
+    //     goto end;
+    // }
+    if(pthread_create(&threads[1], NULL, receive_chat_message,&argsTcp) != 0){
+        perror("Erreur creating thread");
+        goto end;
+    }
+    
+
+    int result;
+    while(game_running){
         int ret = poll(fds, MAX_FDS,-1); 
         if(ret == -1){
             perror("Error polling");
-            break ;
+            game_running = 0;
         }else{
-            if(fds[0].revents & POLLIN)//TCP Socket
-                if((result = receive_chat_message(&argsTcp)) == 0)
-                    goto end;
-                
+            // if(fds[0].revents & POLLIN)//TCP Socket
+            //     if((result = receive_chat_message(&argsTcp)) < 1)
+            //         goto end;
 
-            if(fds[2].revents & POLLIN) //MULTICAST  SOCKET
-                receive_game_data_thread(&argsGame);
+            // if(fds[2].revents & POLLIN) //MULTICAST  SOCKET
+            //     receive_game_data_thread(&argsGame);
 
-            if(fds[3].revents & POLLIN){ //STDIN ready to read
+            if(fds[0].revents & POLLIN){ //STDIN ready to read
                 ACTION action_r = input_thread(&argsUdp);
 		        if(action_r != NONE){
                 	debug_printf("action to send %d",action_r);
 			        if(action_r == TCHAT){
-                    		if(fds[0].revents & POLLOUT){
-			    		        debug_printf("tcp ready");
-                        		send_chat_message(&argsTcp);
+                    		if(fds[2].revents & POLLOUT){ //tcp ready to send
+			    		        debug_printf("tcp ready to send");
+                        		result = send_chat_message(&argsTcp);
+                                if(result < 1)
+                                    game_running = 0;
 		    		        }
                 	}else{
-                        if(action_r == QUIT)
-                            goto end;
-				        if(fds[1].revents & POLLOUT)
+                        if(action_r == QUIT){
+                            game_running = 0;
+                            break;
+                        }
+				        if(fds[1].revents & POLLOUT) //udp ready to send
                         	send_action_udp(&argsUdp, action_r); //poll for socket 
 			            }
                     }
             }
         }
     }
-    
-    //join all threads
-    // for(int i = 0; i < 3; i++){
-    //     pthread_join(threads[i],NULL);
-    // }
+
+    for(int i = 0; i < nbthreads; i++){
+        pthread_join(threads[i],NULL);
+    }
 
     
     end: 
@@ -179,16 +193,19 @@ int main(int argc, char *argv[]){
         free_board(board);
         curs_set(1); // Set the cursor to visible again
         endwin();
-        free(line); free(board);
-        close(ter);
+        free(line);
+        free(board);
+        free(player_data);
+        // close(ter);
         close(socket_tcp);
         close(socket_udp);
         close(socket_multidiff);
+
     return 0;
 }
 
 int open_new_ter(const char *name){
-    int fd = open(name, O_WRONLY);
+    int fd = open(name, O_WRONLY | O_CREAT, 0644);
     if(fd == -1){
         perror("Error while redirecting");
         return -1;
@@ -197,7 +214,8 @@ int open_new_ter(const char *name){
         perror("Errror while redirection stderr");
         return -1;
     }
-    return fd;
+    close(fd);
+    return 1;
 }
 
 int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp){
@@ -208,12 +226,14 @@ int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp){
     }
     if (adr_tcp == NULL)
         adr_tcp = malloc(sizeof(*adr_tcp));
+
     memset(adr_tcp, 0, sizeof(*adr_tcp));
     adr_tcp->sin6_family = AF_INET6;
     adr_tcp->sin6_port = htons(PORT_PRINCIPAL);
     inet_pton(AF_INET6, ADDR_GAME, &(adr_tcp->sin6_addr));
 
     //*** try to connec to the server ***
+    // TODO connect with timeout 
     int r;
     if((r = connect(*socket_tcp, (struct sockaddr *)adr_tcp, sizeof(*adr_tcp))) == -1){
         perror("connexion fail");
@@ -223,76 +243,41 @@ int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp){
     return 0;
 }
 
-int send_message_2(int socket_tcp, const uint16_t msg){
-    // send the information to the server
-    ssize_t bytes_sent = 0;
-    ssize_t r;
-    while (bytes_sent < 2){
-        r = send(socket_tcp, &msg + bytes_sent, sizeof(msg) - bytes_sent, 0);
-        if (r == -1){
-            perror("Error while sending client message");
-            return -1;
-        }
-        bytes_sent += r;
-    }
-    debug_printf("total message 2 send %d\n",bytes_sent);
-    return 0;
-}
-
-ServerMessage22 *receive_info(int socket_tcp)
-{
+ServerMessage22 *receive_info(int socket_tcp){
     int r;
-    int totale = 0;
     ServerMessage22 *msg = malloc(sizeof(ServerMessage22));
-    if (msg == NULL)
-    {
+    if (msg == NULL){
         perror("malloc msg");
         return NULL;
     }
-    while (totale < sizeof(ServerMessage22))
-    {
-        if ((r = recv(socket_tcp, msg + totale, sizeof(ServerMessage22) - totale, 0)) < 0)
-        {
-            perror("recv");
-            break;
-        }
-        if (r == 0)
-        {
-            perror("Connection closed by remote server");
-            break;
-        }
-        totale += r;
-    }
-    if (totale != sizeof(ServerMessage22))
-    {
+    int totale = read_tcp(socket_tcp, msg, 22);
+
+    if (totale != 22){
         debug_printf("Wrong number of byte received: %d instead of %lu\n", totale, sizeof(ServerMessage22));
         return NULL;
     }
-    ServerMessage22 *v = extract_msg(msg);
-    free(msg);
-    return v;
-}
-
-ServerMessage22 *extract_msg(void *buf)
-{
-    ServerMessage22 *msg = malloc(sizeof(ServerMessage22));
-    if (msg == NULL)
-    {
-        perror("malloc msg");
-        return NULL;
-    }
-    /*memcpy(&(msg->entete), buf, sizeof(uint16_t));
-    memcpy(&(msg->port_udp), buf + sizeof(uint16_t), sizeof(uint16_t));
-    memcpy(&(msg->port_diff), buf + 2 * sizeof(uint16_t), sizeof(uint16_t));
-    memcpy(&(msg->adr), buf + 3 * sizeof(uint16_t), sizeof(struct in6_addr));*/
-    memcpy(msg, buf, sizeof(ServerMessage22));
-
-    // convert
+    // ServerMessage22 *v = extract_msg(msg);
     msg->entete = ntohs(msg->entete);
     msg->port_udp = ntohs(msg->port_udp);
     msg->port_diff = ntohs(msg->port_diff);
+    // free(msg);
     return msg;
 }
+
+// ServerMessage22 *extract_msg(void *buf){
+//     ServerMessage22 *msg = malloc(sizeof(ServerMessage22));
+//     if (msg == NULL){
+//         perror("malloc msg");
+//         return NULL;
+//     }
+//     memcpy(msg, buf, sizeof(ServerMessage22));
+// 
+//     // convert
+//     msg->entete = ntohs(msg->entete);
+//     msg->port_udp = ntohs(msg->port_udp);
+//     msg->port_diff = ntohs(msg->port_diff);
+//     return msg;
+// }
 
 void print_ServerMessage22(const ServerMessage22 *msg){
     char buf[INET6_ADDRSTRLEN];
@@ -305,11 +290,9 @@ void print_ServerMessage22(const ServerMessage22 *msg){
     debug_printf("-------------------------------");
 }
 
-int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr)
-{
+int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr){
 
-    if ((*socket_multidiff = socket(AF_INET6, SOCK_DGRAM, 0)) == -1)
-    {
+    if((*socket_multidiff = socket(AF_INET6, SOCK_DGRAM, 0)) == -1){
         perror("Error while creating the MULTDIFF socket");
         return -1;
     }
@@ -321,9 +304,8 @@ int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_dat
     int optval = 1;
     setsockopt(*socket_multidiff, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
 
-    if (bind(*socket_multidiff, (struct sockaddr *)adr, sizeof(*adr)))
-    {
-        perror("echec de bind");
+    if(bind(*socket_multidiff, (struct sockaddr *)adr, sizeof(*adr))){
+        perror("echec de bind multicast");
         close(*socket_multidiff);
         return -1;
     }
@@ -338,8 +320,8 @@ int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_dat
     // inet_pton (AF_INET6, player_data->adr, &group.ipv6mr_multiaddr.s6_addr);
     memcpy(&group.ipv6mr_multiaddr.s6_addr, &(player_data->adr), 16);
     group.ipv6mr_interface = ifindex;
-    if (setsockopt(*socket_multidiff, IPPROTO_IPV6, IPV6_JOIN_GROUP, &group, sizeof group) < 0)
-    {
+
+    if(setsockopt(*socket_multidiff, IPPROTO_IPV6, IPV6_JOIN_GROUP, &group, sizeof group) < 0){
         perror("echec de abonnement groupe");
         close(*socket_multidiff);
         return -1;
@@ -360,201 +342,230 @@ int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct socka
         perror("Malloc fail for init addr_udp");
         return -1;
     }
-    debug_printf("init_udp_adr : avant init adr udp");
     // Configurer l'adresse du serveur
     memset(addr_udp, 0, sizeof(*addr_udp));
     addr_udp->sin6_family = AF_INET6;
     addr_udp->sin6_port = htons(player_data->port_udp);
-    debug_printf("init_udp_adr : avant palyer adr");
+
     inet_pton(AF_INET6, ADDR_GAME, &addr_udp->sin6_addr);
     // memcpy(&addr_udp->sin6_addr,&(player_data->adr),sizeof(player_data->adr));
     return 0;
 }
 
-int send_chat_message(const ThreadArgs *args){
+int send_chat_message(const void *args){
+
     ThreadArgs *thread = (ThreadArgs *)args;
     ChatMessage msg;
     memset(&msg,0,sizeof(ChatMessage));
-    //TODO: CODEREQ CHAT MSG GROUPE OR COEQUIPIER
-    msg.codereq_id_eq = htons((7 << 3) | (thread->player_data->entete & 0x7));
+    uint16_t codereq = thread->line->for_team ? 8 : 7 ;// 8 pour la team 
+
+    msg.codereq_id_eq = htons((codereq << 3) | (thread->player_data->entete & 0x7));
+
     debug_printf("send_chat_message: msg codereq %d",msg.codereq_id_eq);
-    
-    ssize_t r;
-    ssize_t total = 0; 
+     
     msg.len = strlen(thread->line->data);
     memcpy(msg.data,thread->line->data,msg.len);
+
     debug_printf("send_chat_message: msg: %s",msg.data);
-    while(total < msg.len + 3){
-        if((r = send(thread->socket, &msg + total,(msg.len + 3 )- total, 0)) < 0){
-            perror("error while sending chat message");
-            return -1;
-        }
-        if (r == 0){
-            perror("connexion closed by remote server");
-            return -1;
-        }
-        total += r;
-    }
+
+    ssize_t total = send_tcp(thread->socket, &msg, msg.len + 3);
+    if(total < 1)
+        game_running = 0;
+
     clear_line_msg(thread->line);
-    return 0;
+
+    return total;
 }
 
-int receive_chat_message(ThreadArgs * arg){
-    ThreadArgs *thread = (ThreadArgs *) arg;
-    ssize_t r;
-    ssize_t total = 0;
-    ChatMessage msg;
-    //we want the first 2 octet to detect the end of the game
-    // while(game_running){
-    while(total < 2){
-        if((r = recv(thread->socket, &msg + total, 2 - total, 0)) < 0) {
-            perror("recv");
-            game_running = 0;
-            return -1;
-        }
-        if(r == 0){
-            perror("Connection closed by remote server");
-            game_running = 0;
-            return 0;
-        }
-        total += r;
-    }
-    debug_printf("receive_chat_message: first while recv %d",total);
-    msg.codereq_id_eq = ntohs(msg.codereq_id_eq);
-    uint16_t codereq = msg.codereq_id_eq >> 3;
-    debug_printf("receive_chat_message codereq %u",codereq);
-    if(codereq > 14){
-        //TODO: handle the winner id 
-        game_running = 0;
-        return 1;
-    }
+void* receive_chat_message(void *arg){
     
-    //recv len 
-    if((r = recv(thread->socket, &msg + total, 1, 0)) <= 0) {
-        perror("receive_chat_message recv len");
-        game_running = 0;
-        return -1;
-    }
-    total += r;
-    debug_printf("receive_chat_message: second while recv %d, %u",total, msg.len);
-    total -= 3;
-    while(total < msg.len){
-        if((r = recv(thread->socket, &msg + 3 + total, msg.len - total, 0)) < 0){
-            perror("receive_chat_message recv msg ");
-            game_running = 0;
-            return -1;
-        }
-        if(r == 0){
-            perror("Connection closed by remote server");
-            game_running = 0;
-        }
-        total += r;
-    }
-    // Update the message buffers
-    strcpy(thread->line->last_msg2, thread->line->last_msg1);
-    strcpy(thread->line->last_msg1, msg.data);
-    debug_printf("receive_chat_message: last_msg2 %s",thread->line->last_msg2);
-    debug_printf("receive_chat_message: last_msg1 %s",thread->line->last_msg1);
-    debug_printf("Chat msg Received totale :%d", total);
-    debug_printf("CODEREQ: %u ID: %u", msg.codereq_id_eq >> 3, (msg.codereq_id_eq >> 3) & 0x3); // Extrait le CODEREQ id
-    debug_printf("EQ: %u LEN: %u DATA: %s", msg.codereq_id_eq & 0x1,msg.len, msg.data); // Extrait EQ
-    // }
-    // end_f :
-    debug_printf("thread for chat message finished");
-    return 2;
-}
+    ThreadArgs *thread = (ThreadArgs *) arg;
+    // ssize_t total = 0;
+    ssize_t r;
+    ChatMessage *msg = malloc(sizeof(ChatMessage));
 
-void *receive_game_data_thread(ThreadArgs *args){
-    ThreadArgs * thread = (ThreadArgs *) args;
-    uint8_t buf[1600];
-    int grid_len;
-    memset(buf, 0, sizeof(buf));
-    GameData gamedata;
-    ssize_t bytes_recv;
-    bool init_grid = false;
-    if(!*(thread->is_initialized)){
-        // while(game_running){
-        if((bytes_recv = recv(thread->socket, buf, sizeof(buf), 0)) > 0){
-            memcpy(&gamedata.codereq_id_eq, buf, sizeof(uint16_t));
-            gamedata.codereq_id_eq = ntohs(gamedata.codereq_id_eq);
+    struct pollfd fds[1];
+    fds[0].fd = thread->socket;
+    fds[0].events = POLLIN;
 
-            if(gamedata.codereq_id_eq != 88) 
-                goto end; //skip the first packet which is not a the whole grid 
+    while(game_running){
+        int ret = poll(fds, 1,2000); 
+        if(ret == -1){
+            perror("Error polling");
+            continue;
+        }else{
+            memset(msg,0,sizeof(ChatMessage));
 
-            memcpy(&gamedata.num, buf + sizeof(uint16_t), sizeof(uint16_t));
-            gamedata.num = ntohs(gamedata.num);
-
-            //extract the board portion 
-            int offset = 4;
-            thread->board->h = (uint8_t)buf[offset];
-            debug_printf("thread->board->h %d\n",thread->board->h);
-            thread->board->w = (uint8_t)buf[offset+1];
-            offset += 2; 
-
-            debug_printf("h %u, l %u, suivant %u\n",buf[offset -2],buf[offset -1], buf[offset]); 
-            //allocate memory for the grid
-            grid_len = thread->board->h * thread->board->w;
-            thread->board->grid = malloc(grid_len);
-            if(thread->board->grid == NULL){
-                perror("malloc de thread->board.grid");
+            //read the cored_eq_id + len of msg
+            r = read_tcp(thread->socket, msg,3);
+            if(r < 1){
                 game_running = 0;
                 goto end;
             }
-            // copy the data of the grid
-            memcpy(thread->board->grid, buf + offset, grid_len);
-            *thread->is_initialized = 1;
-            //print_grille(thread->board);
-
-            //setup_board(thread->board);
-            debug_printf("receive_game_data_thread CODEREQ_ID_EQ: %u", gamedata.codereq_id_eq);
-            debug_printf("receive_game_data_thread NUM: %u", gamedata.num);
-            refresh_game(thread->board, thread->line);
-            goto end;
-            
-        }
-        perror("Error on recv for game datafirst time ");
-        game_running = 0; 
-    }else{
-        // }
-        // read either freq or the whole grid
-        // while(game_running){
-        grid_len = thread->board->h * thread->board->w;
-        memset(buf,0,grid_len + 6);
-        if((bytes_recv = recv(thread->socket, buf, grid_len + 6, 0)) <= 0){
-            perror("Error on recv for game data");
-            goto end;
-        }
-        // extract the codereq to see if it's the whole grid or not
-        uint16_t code_req;
-        //memcpy(&code_req, buf, sizeof(uint16_t));
-        //code_req = ntohs(code_req);
-        // check if it's the whole grid
-        code_req=*((uint16_t *)buf);
-        code_req=htons(code_req);
-        code_req=(code_req>>3);
-        if (code_req == 11){
-            debug_printf("the whole grid");
-            //TODO call func
-            memcpy(thread->board->grid, buf+6, grid_len);
-            print_grille(thread->board);
-            refresh_game(thread->board, thread->line);
-        }else if(code_req==12){
-            debug_printf("we received a freq of the grid");
-            // we need to first extract the number of cells changed 
-            uint8_t nb = buf[4];
-
-            debug_printf("la taille de difference %d \n",nb);
-            
-            for (uint8_t i = 0; i < nb; i++){
-                debug_printf("hauteur %d largeur %d contenue %d\n", buf[5 + i], buf[5+i+2], buf[5 + i + 1]);
-                set_grid(thread->board, buf[5 + i], buf[5+i+2], buf[5 + i + 1]);
+            debug_printf("receive_chat_message: nrmlm 3: %d",r);
+            msg->codereq_id_eq = ntohs(msg->codereq_id_eq);
+            uint16_t codereq = msg->codereq_id_eq >> 3;
+            debug_printf("receive_chat_message codereq %u",codereq);
+            if(codereq > 14){
+                //TODO: handle the winner id 
+                game_running = 0;
+                goto end;
             }
+            
+            debug_printf("receive_chat_message: msg len %u", msg->len);
+            r = read_tcp(thread->socket,&(msg->data), msg->len);
+            if(r < 1) {
+                game_running = 0;
+                goto end;
+            }
+
+            strcpy(thread->line->last_msg2, thread->line->last_msg1);
+            strcpy(thread->line->last_msg1, msg->data);
+            debug_printf("receive_chat_message: last_msg2 %s",thread->line->last_msg2);
+
+            debug_printf("receive_chat_message: last_msg1 %s\n",thread->line->last_msg1);
+
+
+            debug_printf("CODEREQ: %u ID: %u", msg->codereq_id_eq >> 3, (msg->codereq_id_eq >> 3) & 0x3); // Extrait le CODEREQ id
+            debug_printf("EQ: %u LEN: %u DATA: %s", msg->codereq_id_eq & 0x1,msg->len, msg->data); // Extrait EQ
+        
             refresh_game(thread->board, thread->line);
+        }
+    }
+
+    // while(total < 3){
+    //     if((r = recv(thread->socket, msg + total, 3 - total, 0)) < 0) {
+    //         perror("recv");
+    //         game_running = 0;
+    //         return -1;
+    //     }
+    //     if(r == 0){
+    //         perror("Connection closed by remote server");
+    //         game_running = 0;
+    //         return 0;
+    //     }
+    //     total += r;
+    // }
+    //..
+    // total -= 3;
+    // while(total < msg->len){
+    //     if((r = recv(thread->socket, &(msg->data) + total, msg->len - total, 0)) < 0){
+    //         perror("receive_chat_message recv msg ");
+    //         game_running = 0;
+    //         return -1;
+    //     }
+    //     if(r == 0){
+    //         perror("Connection closed by remote server");
+    //         game_running = 0;
+    //     }
+    //     total += r;
+    // }
+    // Update the message buffers
+    //..
+
+    end:
+        debug_printf("thread for chat message finished");
+        free(msg);
+        return NULL;
+}
+
+void *receive_game_data_thread(void *args){
+    ThreadArgs * thread = (ThreadArgs *) args;
+
+    struct pollfd fds[1];
+    fds[0].fd = thread->socket;
+    fds[0].events =  POLLIN;
+
+    int grid_len;
+    // memset(buf, 0, sizeof(buf));
+
+    GameData gamedata;
+    ssize_t bytes_recv;
+    while(game_running){
+        int ret = poll(fds, 1,-1); 
+        if(ret == -1){
+            perror("Error polling");
+            game_running = 0 ;
         }else{
-            printf("code req inconnue , code recu %d\n",code_req);
+            if(!*(thread->is_initialized)){
+                uint8_t buf[1600];
+                if((bytes_recv = recv(thread->socket, buf, sizeof(buf), 0)) > 0){
+                    memcpy(&gamedata.codereq_id_eq, buf, sizeof(uint16_t));
+                    gamedata.codereq_id_eq = ntohs(gamedata.codereq_id_eq);
+
+                    if(gamedata.codereq_id_eq != 88) 
+                        continue; //skip the first package which is not a the whole grid 
+
+                    memcpy(&gamedata.num, buf + sizeof(uint16_t), sizeof(uint16_t));
+                    gamedata.num = ntohs(gamedata.num);
+
+                    //extract the board portion 
+                    int offset = 4;
+                    thread->board->h = (uint8_t)buf[offset];
+                    thread->board->w = (uint8_t)buf[offset+1];
+                    offset += 2; 
+
+                    debug_printf("h %u, l %u, suivant %u\n",buf[offset -2],buf[offset -1], buf[offset]); 
+                    //allocate memory for the grid
+                    grid_len = thread->board->h * thread->board->w;
+                    thread->board->grid = malloc(grid_len);
+                    if(thread->board->grid == NULL){
+                        perror("malloc de thread->board.grid");
+                        game_running = 0;
+                        goto end;
+                    }
+                    // copy the data of the grid
+                    memcpy(thread->board->grid, buf + offset, grid_len);
+                    *thread->is_initialized = 1;
+                    //print_grille(thread->board);
+
+                    //setup_board(thread->board);
+                    debug_printf("receive_game_data_thread CODEREQ_ID_EQ: %u", gamedata.codereq_id_eq);
+                    debug_printf("receive_game_data_thread NUM: %u", gamedata.num);
+                    refresh_game(thread->board, thread->line);
+                    // goto end;
+                    continue;
+                }
+                perror("Error on recv for game datafirst time ");
+                game_running = 0; 
+            }else{
+                // }
+                // read either freq or the whole grid
+                // while(game_running){
+                grid_len = thread->board->h * thread->board->w;
+                uint8_t grid_buf[grid_len + 6];
+
+                // memset(buf,0,grid_len + 6);
+                if((bytes_recv = recv(thread->socket, grid_buf, grid_len + 6, 0)) <= 0){
+                    perror("Error on recv for game data");
+                    continue;
+                }
+                // extract the codereq to see if it's the whole grid or not
+                uint16_t code_req;
+                memcpy(&code_req, grid_buf, sizeof(uint16_t));
+
+                // code_req = ntohs(code_req);
+                // check if it's the whole grid
+                if (ntohs(code_req) == 88){
+                    debug_printf("the whole grid");
+                    //TODO call func
+                    memcpy(thread->board->grid, grid_buf+6, grid_len);
+                    print_grille(thread->board);
+                    refresh_game(thread->board, thread->line);
+                }else{
+                    debug_printf("we received a freq of the grid");
+                    // we need to first extract the number of cells changed 
+                    uint8_t nb = grid_buf[4];
+                    for(uint8_t i = 0; i < nb; i++){
+                        set_grid(thread->board, grid_buf[5 + i + 1], grid_buf[5 + i], grid_buf[5 + i + 2]);
+                    }
+                    refresh_game(thread->board, thread->line);
+                }
+            }
         }
     }
     end:
+        debug_printf("thread game grid exiting");
         return NULL;
 }
 
@@ -592,16 +603,20 @@ ACTION input_thread(ThreadArgs * arg){
             debug_printf("game endded");
             r = QUIT;
             break;
+        case '@':
+            debug_printf("message pour equipe");
+            thread->line->for_team = 1;
+            break;
         case '\n': 
-            // Clear the user input buffer
-            // memset(thread->line->data, 0, TEXT_SIZE);
-            // thread->line->cursor = 0;
             debug_printf("contenu de line dans input_thread %s", thread->line->data);
-            r = TCHAT;
+            if(strlen(thread->line->data) > 0)
+                r = TCHAT;
             break;
         default:
-            if (prev_c >= ' ' && prev_c <= '~' && thread->line->cursor < TEXT_SIZE)
+            if (prev_c >= ' ' && prev_c <= '~' && thread->line->cursor < TEXT_SIZE){
                 thread->line->data[(thread->line->cursor)++] = prev_c;
+                refresh_game(thread->board, thread->line);
+            }
             break;
     }
     if (r == QUIT){
@@ -611,7 +626,7 @@ ACTION input_thread(ThreadArgs * arg){
     // usleep(30*1000);      
     // }
     end:
-        debug_printf("Thread input_thread exiting\n");
+        debug_printf("input_thread exiting\n");
         // pthread_exit(NULL);
         return r;
 }
@@ -621,7 +636,6 @@ void clear_line_msg(Line *l){
     l->cursor = 0;
     memset(l->data, 0, TEXT_SIZE);
     debug_printf("msg in line cleared");
-    debug_printf("clear_line_msg %s", l->data);
 }
 
 int send_action_udp(const ThreadArgs* thread, ACTION action){

@@ -542,8 +542,12 @@ void *receive_game_data_thread(ThreadArgs *args){
             debug_printf("we received a freq of the grid");
             // we need to first extract the number of cells changed 
             uint8_t nb = buf[4];
+
+            debug_printf("la taille de difference %d \n",nb);
+            
             for (uint8_t i = 0; i < nb; i++){
-                set_grid(thread->board, buf[5 + i], buf[5 + i+1], buf[5 + i + 2]);
+                debug_printf("hauteur %d largeur %d contenue %d\n", buf[5 + i], buf[5+i+2], buf[5 + i + 1]);
+                set_grid(thread->board, buf[5 + i], buf[5+i+2], buf[5 + i + 1]);
             }
             refresh_game(thread->board, thread->line);
         }else{

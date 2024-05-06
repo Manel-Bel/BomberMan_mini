@@ -150,7 +150,7 @@ void *send_freqBoard(void *args)
     debug_printf("start sleep \n");
     clock_t debut, fin;
     double temps;
-    printf("freq temp %d \n",g->freq);
+    //printf("freq temp %d \n",g->freq);
     debut = clock();
     usleep(g->freq);
     fin = clock();
@@ -259,9 +259,11 @@ void *send_freqBoard(void *args)
     *NB = nb;
     uint8_t *buff = (uint8_t *)(buffsend + 5);
     fillDiff(buff, g->board.grid, g->lastmultiboard);
+    memcpy(g->lastmultiboard,g->board.grid,g->board.h*g->board.w);
      
-    //printf("send freq\n");
+    printf("send freq\n");
     //print_tab((char*)buff,nb*3);
+    
     sendto(g->sock_mdiff, buffsend, 5 + (nb*3), 0, (struct sockaddr *)&g->addr_mdiff, sizeof(g->addr_mdiff));
 
     n++;
@@ -606,6 +608,7 @@ void *server_game(void *args)
             memset(bufTCHAT, 0, TEXT_SIZE+3);
             int len;
             int r=0;
+            int equipe=0;
             if((r=readTchat(bufTCHAT, fds[i].fd, &len))==0){
               printf("prbleme de connexion client\n");
               fds[i].fd=-1;

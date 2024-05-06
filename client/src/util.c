@@ -93,10 +93,14 @@ void refresh_game(Board* b, Line* l) {
     }
 
     // Draw last two messages
-    attron(COLOR_PAIR(1)); // Enable custom color 1
+    attron(COLOR_PAIR(2)); // Enable custom color 2
     mvaddstr(b->h+2, 1, l->last_msg1); // Print last message 1
+    attroff(COLOR_PAIR(2));
+
+    attron(COLOR_PAIR(3)); // Enable custom color 3
     mvaddstr(b->h+3, 1, l->last_msg2); // Print last message 2
-    attroff(COLOR_PAIR(1)); // Disable custom color 1
+    attroff(COLOR_PAIR(3));
+
 
     // Update chat text
     attron(COLOR_PAIR(1)); // Enable custom color 1
@@ -166,6 +170,8 @@ bool perform_action(Board* b, Pos* p, ACTION a) {
     set_grid(b,p->x,p->y,1);
     return false;
 }
+
+
 
 int main666()
 {

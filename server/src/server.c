@@ -3,7 +3,7 @@
 
 #define H 20
 #define W 20
-#define nbrply 1
+#define nbrply 2
 #define TEXTSIZE 255
 
 /* à revoir*/
@@ -658,7 +658,7 @@ void *server_game(void *args)
     perror("creation thread for sendCompleteBoard");
     return NULL;
   }
-
+  debug_printf("\n sending fre of boeag ? \n");
   pthread_t thread_freqBoard;
   if (pthread_create(&thread_freqBoard, NULL, send_freqBoard, g) < 0)
   {

@@ -52,6 +52,7 @@ typedef struct {
     Board *board;
     Line *line;
     struct sockaddr_in6 *addr_udp;
+    uint8_t *is_initialized;
 }ThreadArgs;
 
 //initialize the socket
@@ -63,10 +64,11 @@ void print_ServerMessage22(const ServerMessage22* msg);
 int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr);
 int init_udp_adr(int *sock_udp, const ServerMessage22* player_data, struct sockaddr_in6 *addr_udp);
 int send_chat_message(const ThreadArgs * args);
-void *receive_chat_message(ThreadArgs* arg);
+int receive_chat_message(ThreadArgs* arg);
 void *receive_game_data_thread(ThreadArgs* args);
 int send_action_udp(const ThreadArgs* thread, ACTION action);
 ACTION input_thread(ThreadArgs* arg);
 int open_new_ter(const char *name);
+void clear_line_msg(Line *l);
 
 #endif 

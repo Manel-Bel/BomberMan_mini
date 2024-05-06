@@ -10,7 +10,7 @@
 
 
 
-void action_perform(uint8_t *board, int x, int y, int action, Player *p)
+void action_perform(uint8_t *board, int x, int y, int action, Player *p, Game *game)
 {
   int numcaseply = 5 + p->id;
 
@@ -48,21 +48,28 @@ void action_perform(uint8_t *board, int x, int y, int action, Player *p)
       y2++;
 
       break;
-    default:
+    case 3:
       if (x <= 0)
       {
         return;
       }
       x2--;
+      break;
+    case 4:
+      board[y * W + x] = 3; //la case contient une bombe
+      plant_bomb(game, x, y);
+    default:
     }
 
     if (!board[(y2)*W + x2])
     {
-      debug_printf("action realisé %d\n", action);
-      board[y * W + x] = 0;
-      board[y2 * W + x2] = numcaseply;
-      p->pos[0] = x2;
-      p->pos[1] = y2;
+      if(action<=3){
+        debug_printf("action realisé %d\n", action);
+        board[y * W + x] = 0;
+        board[y2 * W + x2] = numcaseply;
+        p->pos[0] = x2;
+        p->pos[1] = y2;
+      }
     }
   }
   else
@@ -104,6 +111,7 @@ void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff)
       }
     }
   }
+  printf("le nombre de difference dans fillDif %d \n",n);
 }
 
 /* afficher le contenue de buff */
@@ -127,8 +135,7 @@ void print_tab(char *buff, int size)
   }
 }
 
-/* peut etre le probleme de segmentation fault */
-
+/* traitement des requetes des joueurs */
 void *send_freqBoard(void *args)
 {
   debug_printf("dans send_freq");
@@ -186,7 +193,7 @@ void *send_freqBoard(void *args)
             {
               debug_printf("perform\n");
               debug_printf("action 0 à3 \n");
-              action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i]);
+              action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i], g);
               //print_grille_1D((g->board.grid));
 
               moved = 1;
@@ -197,7 +204,7 @@ void *send_freqBoard(void *args)
 
             if (!bombered)
             {
-              action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i]);
+              action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i], g);
               bombered = 1;
             }
 
@@ -234,7 +241,7 @@ void *send_freqBoard(void *args)
 
     /* puis on envoie le differenciel*/
 
-    uint8_t *buffsend = malloc(5 + nb * 3);
+    uint8_t *buffsend = malloc(5 + (nb * 3));
     if (buffsend == NULL)
     {
       perror("malloc dans freq_");
@@ -242,26 +249,27 @@ void *send_freqBoard(void *args)
     }
     uint16_t *entete = (uint16_t *)buffsend;
     *entete = htons(12 << 3);
+    printf("entete %d\n",*((uint16_t *)buffsend));
 
     uint16_t *num = (uint16_t *)(buffsend + 2);
     *num = htons(n);
+
 
     uint8_t *NB = (uint8_t *)(buffsend + 4);
     *NB = nb;
     uint8_t *buff = (uint8_t *)(buffsend + 5);
     fillDiff(buff, g->board.grid, g->lastmultiboard);
      
-    printf("send freq\n");
-    print_tab((char*)buff+5,nb*3);
-    sendto(g->sock_mdiff, buffsend, 5 + nb, 0, (struct sockaddr *)&g->addr_mdiff, sizeof(g->addr_mdiff));
+    //printf("send freq\n");
+    //print_tab((char*)buff,nb*3);
+    sendto(g->sock_mdiff, buffsend, 5 + (nb*3), 0, (struct sockaddr *)&g->addr_mdiff, sizeof(g->addr_mdiff));
 
     n++;
   }
   return NULL;
 }
 
-int readTchat(uint8_t *buf, int sock, int *size)
-{
+int readTchat(uint8_t *buf, int sock, int *size){
 
   
   
@@ -276,8 +284,8 @@ int readTchat(uint8_t *buf, int sock, int *size)
   printf("recv taille recu %d \n ", total);
   uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buf);
 
-  printf("CODEREQ : %d\n",*CODEREQ_ID_REQ);
   uint8_t id_eq = ntohs(*CODEREQ_ID_REQ) & 0x7;
+  printf("CODEREQ : %d\n",ntohs(*CODEREQ_ID_REQ) >>3);
    
 
   
@@ -613,6 +621,8 @@ void *server_game(void *args)
         }
       }
     }
+    // Update bombs and handle explosions
+    update_bombs(g);
   }
 
   printf("LE JEU EST FINI\n");
@@ -755,29 +765,24 @@ int main_serveur(int freq)
 
   int pos = 0;
 
-  while (1)
-  {
+  while (1){
 
     r = poll(fds, nfds, 0);
-    if (r < 0)
-    {
+    if (r < 0){
       perror("erreur de poll dans main_serveur");
       return 1;
     }
 
-    for (size_t i = 0; i < nfds; i++)
-    {
+    for (size_t i = 0; i < nfds; i++){
 
       // Si une socket est pret à lecture
-      if (fds[i].revents == POLLIN)
-      {
-        if (fds[i].fd == sock)
-        {
+      if (fds[i].revents == POLLIN){
+        if (fds[i].fd == sock){
 
           /* attente de la connexion */
           struct sockaddr_in6 addrclient;
           unsigned size = 0;
-          debug_printf("attends une connexoin");
+          debug_printf("attend une connexoin");
           int sockclient = accept(sock, (struct sockaddr *)&addrclient, &size);
           printf("sockclient %d \n ", sockclient);
 

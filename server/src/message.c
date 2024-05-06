@@ -157,20 +157,21 @@ int  recvRequestReady(int sock,char mode){
 
 /* fonction pour envoyer une messages en TCP*/
 
-int sendTCP(int sock, void *buf, int size)
-{
+int sendTCP(int sock, void *buf, int size){
   int total = 0;
-
-  while (total < size)
-  {
+  printf("sendTCP size of msg to send  is :%d \n",size);
+  unsigned char *bytes = (unsigned char *)buf;
+  for (int i = 0; i < size; i++) {
+        printf("%02X ", bytes[i]);
+    }
+    printf("\n");
+  while (total < size){
     int nbr = send(sock, buf + total, size - total, 0);
-    if (nbr < 0)
-    {
+    if (nbr < 0){
       perror("send error in sendTCP");
       return 1;
     }
-    if (nbr == 0)
-    {
+    if (nbr == 0){
       perror("connexion fermé client in sendTCP");
       return 1;
     }
@@ -182,35 +183,31 @@ int sendTCP(int sock, void *buf, int size)
 /* fonction pour recevoir une messages en TCP*/
 
 
-int recvTCP(int sock, void *buf, int size)
-{
+int recvTCP(int sock, void *buf, int size){
 
   int total = 0;
   /*int entetelue=0;
   */
 
-  while (total < size)
-  {
+  while (total < size){
     int nbr = recv(sock, buf + total, size-total, 0);
-    if (nbr < 0)
-    {
+    if (nbr < 0){
       perror("recv error in recvTCP");
       return -1;
     }
-    if (nbr == 0)
-    {
+    if (nbr == 0){
       perror("connexion fermé client in sendTCP");
       return 0;
     }
     total += nbr;
+    printf("recvTCP totale %d", total);
 
     
   }
   return total;
 }
 
-void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff)
-{
+void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff){
   int timeout=100;
   size_t n=0;
   struct pollfd activi[nfds];

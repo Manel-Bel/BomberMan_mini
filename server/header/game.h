@@ -22,14 +22,18 @@ struct Game{
   struct sockaddr_in6 addr_mdiff;
   struct Board board;
   char *lastmultiboard;
+
   Bomber tabbommber[SIZEBOMBER];
   pthread_mutex_t *mutexboard;
   int *winner;
 
   int freq;
-
+  int num_bombs;  // Number of active bombs
 };
 
+void update_bombs(Game *g);
+void explode_bomb(Game *g, int x, int y);
+void plant_bomb(Game *g, int x, int y);
 int initgame(Game *g,char mode,int h,int w);
 void free_games(Game **games, int len);
 void free_game(Game *g);

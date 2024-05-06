@@ -93,21 +93,24 @@ void refresh_game(Board* b, Line* l) {
     }
 
     // Draw last two messages
-    attron(COLOR_PAIR(2)); // Enable custom color 2
-    mvaddstr(b->h+2, 1, l->last_msg1); // Print last message 1
-    attroff(COLOR_PAIR(2));
-
-    attron(COLOR_PAIR(3)); // Enable custom color 3
-    mvaddstr(b->h+3, 1, l->last_msg2); // Print last message 2
-    attroff(COLOR_PAIR(3));
+    if(l->id_last_msg2 > 0){
+        attron(COLOR_PAIR(l->id_last_msg2)); // Enable custom color 2
+        mvaddstr(b->h+2, 1, l->last_msg2); // Print last message 1
+        attroff(COLOR_PAIR(l->id_last_msg2));
+    }
+    if(l->id_last_msg1 > 0){
+        attron(COLOR_PAIR(l->id_last_msg1)); // Enable custom color 3
+        mvaddstr(b->h+3, 1, l->last_msg1); // Print last message 2
+        attroff(COLOR_PAIR(l->id_last_msg1));
+    }
 
 
     // Update chat text
-    attron(COLOR_PAIR(1)); // Enable custom color 1
+    attron(COLOR_PAIR(5)); // Enable custom color 1
     attron(A_BOLD); // Enable bold
     mvaddstr(b->h+4, 1, l->data); // Print user input
     attroff(A_BOLD); // Disable bold
-    attroff(COLOR_PAIR(1)); // Disable custom color 1
+    attroff(COLOR_PAIR(5)); // Disable custom color 1
 
     refresh(); // Apply the changes to the terminal
 }

@@ -28,7 +28,9 @@ typedef struct Line {
     char data[TEXT_SIZE];
     int cursor;
     char last_msg1[TEXT_SIZE];
+    uint8_t id_last_msg1;
     char last_msg2[TEXT_SIZE];
+    uint8_t id_last_msg2;
     uint8_t for_team;
 } Line;
 

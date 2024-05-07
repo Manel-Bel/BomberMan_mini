@@ -199,7 +199,6 @@ int serverUdp(int sock, int port)
 int initgame(Game *g, char mode, int h, int w)
 {
   g->lenplys = 0;
-  g->thread = 0;
   g->mode = mode;
   g->lastmultiboard = malloc(h * w);
 
@@ -272,6 +271,8 @@ int initgame(Game *g, char mode, int h, int w)
   }
 
   init_grille(g->board.grid);
+
+  debug_printf("fin init game");
 
   return 0;
 }

@@ -16,9 +16,7 @@ struct Player{
     int sockcom; // socket de communication client 
     int Ready; // pour savoir si le joueur est pret à jouer
     int pos[2]; // la position du joueur sur la grille
-    pthread_cond_t *condwin;
-    pthread_mutex_t *vicmutex;
-    pthread_mutex_t *lockstats;
+    
     A_R tabAction[SIZEACTION];
     int len; // le nombre d'action reste à traiter;
     int stat; // 0:vivant(e) 1:mort(e) 
@@ -29,8 +27,7 @@ struct Player{
 Player * createplayer(int id, int sock,int idEq);
 /*free player*/
 void free_player(Player *p);
-/*cancel the last move request*/
-void cancellastmove(A_R *tab, int size);
+
 /*insert a action to the player's list of request action */
 int insererAction(Player *p, A_R action);
 

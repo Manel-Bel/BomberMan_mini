@@ -23,22 +23,12 @@ void free_player(Player *p)
 
   debug_printf("free player \n");
   close(p->sockcom);
-  pthread_mutex_destroy(p->lockstats);
+  //pthread_mutex_destroy(p->lockstats);
   free(p);
 }
 
 
-void cancellastmove(A_R *tab, int size)
-{
-  for (int i = 0; i < size; i--)
-  {
-    if (tab[size - i].action < 4 && tab[size - i].action >= 0)
-    {
-      memcpy(tab + (size - i), tab + (size - i) + 1, size - i - 1);
-      return;
-    }
-  }
-}
+
 
 int insererAction(Player *p, A_R action)
 {

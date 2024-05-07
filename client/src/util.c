@@ -173,7 +173,7 @@ bool perform_action(Board* b, Pos* p, ACTION a) {
     p->x += xd; p->y += yd;
     p->x = (p->x + b->w)%b->w;
     p->y = (p->y + b->h)%b->h;
-    set_grid(b,p->x,p->y,1);
+    //set_grid(b,p->x,p->y,1);
     return false;
 }
 

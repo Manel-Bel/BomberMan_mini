@@ -13,7 +13,6 @@
 struct Game{
   Player *plys[4];
   int lenplys; // nombre joueur en cours
-  pthread_t thread;
   char mode; // game mode, 1: 4p , 2 : equipes;
   int sock_udp;
   int sock_mdiff;
@@ -24,7 +23,6 @@ struct Game{
   char *lastmultiboard;
 
   Bomber tabbommber[SIZEBOMBER];
-  pthread_mutex_t *mutexboard;
   int *winner;
 
   int freq;

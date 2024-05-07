@@ -1,26 +1,27 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <time.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <net/if.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <net/if.h>
 #include <limits.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <netdb.h>
 #include <arpa/inet.h>
-#include <sys/time.h>
 #include <sys/types.h>
 #include <err.h>
 #include <pthread.h>
 #include <netinet/in.h>
 #include <stdbool.h>
+
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/timerfd.h>
+#include <time.h>
+#include <stdint.h>
+#include <inttypes.h>
+
 #include "debug.h"
 #include "board.h"
 

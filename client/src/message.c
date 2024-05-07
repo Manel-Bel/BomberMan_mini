@@ -48,6 +48,7 @@ int send_tcp(const int socket, const void * msg, const int size_msg){
     int total = 0;
     int r;
     while (total < size_msg) {
+        debug_printf("le taille de size_msg %d \n",size_msg);
         if((r = send(socket, msg + total, size_msg - total, 0)) < 0){
             perror("error while sending chat message");
             return -1;
@@ -59,5 +60,6 @@ int send_tcp(const int socket, const void * msg, const int size_msg){
         total += r;
         debug_printf("send_tcp: the total now is %d",total);
     }
+    debug_printf("fin de send_tcp");
     return total;
 }

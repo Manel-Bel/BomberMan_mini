@@ -50,14 +50,22 @@ void generateAdrMultidiff(struct in6_addr *addr);
 //comprise entre FF12:: et FF12:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF
 
 
-int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
-int  recvRequestReady(int sock,char mode);
-void *sendCompleteBoard(void *args);
+/*envoyer le plateau en entier*/
+int sendCompleteBoard(Game *g,int n);
+/* envoyer le differenciel*/
+int sendfreqBoard(Game *g,int n);
+/* send un data à une liste de fd*/
 void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff);
+/* retourne la taille de data recv sinon un nombre<=0*/
 int recvTCP(int sock, void *buf, int size);
+/* retourne la taille de data send sinon un nombre <=0 */
 int sendTCP(int sock, void *buf, int size);
+/*verifier si le joueur est bien pret , retourne 1 si il est pret sinon 0*/
 int recvRequestReady(int sock,char mode);
+/* envoie les informations sur les addresse multicast et port , si reussi retourne 0 sinon 1*/
 int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
+/* retroune la taille total recu, en cas d'echec retourne un nombre <=0*/
+int readTchat(uint8_t *buf, int sock, int *equipe);
 
 
 

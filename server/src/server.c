@@ -450,9 +450,7 @@ void *server_game(void *args)
                 }
               }
             }
-            else
-            {
-
+            else{
               sendTCPtoALL(fds + 3, g->lenplys, bufTCHAT, r);
             }
           }

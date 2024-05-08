@@ -415,6 +415,8 @@ void *server_game(void *args)
             goto end;
           }
           debug_printf("send freq");
+          update_bombs(g);
+
         }
         else if (fds[i].fd == g->sock_udp)
         {
@@ -449,8 +451,7 @@ void *server_game(void *args)
                   }
                 }
               }
-            }
-            else{
+            }else{
               sendTCPtoALL(fds + 3, g->lenplys, bufTCHAT, r);
             }
           }

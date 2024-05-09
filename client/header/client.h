@@ -53,6 +53,7 @@ typedef struct {
     Line *line;
     struct sockaddr_in6 *addr_udp;
     uint8_t *is_initialized;
+    uint16_t *num_msg;
 }ThreadArgs;
 
 //initialize the socket
@@ -92,6 +93,13 @@ int read_tcp(const int socket, void * msg, const int size_msg);
 *  \param size_msg The size of the message to send.
 */
 int send_tcp(const int socket, const void * msg, const int size_msg);
+
+
+void change_val_game_running();
+
+uint8_t get_val_game_running();
+
+void close_tcp_socket(int * socket_tcp);
 
 
 #endif 

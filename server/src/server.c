@@ -3,7 +3,7 @@
 
 #define H 20
 #define W 20
-#define nbrply 2
+#define nbrply 1
 #define TEXTSIZE 255
 
 /* à revoir*/

@@ -254,7 +254,6 @@ int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp){
 }
 
 ServerMessage22 *receive_info(int socket_tcp){
-    int r;
     ServerMessage22 *msg = malloc(sizeof(ServerMessage22));
     if (msg == NULL){
         perror("malloc msg");
@@ -274,20 +273,6 @@ ServerMessage22 *receive_info(int socket_tcp){
     return msg;
 }
 
-// ServerMessage22 *extract_msg(void *buf){
-//     ServerMessage22 *msg = malloc(sizeof(ServerMessage22));
-//     if (msg == NULL){
-//         perror("malloc msg");
-//         return NULL;
-//     }
-//     memcpy(msg, buf, sizeof(ServerMessage22));
-// 
-//     // convert
-//     msg->entete = ntohs(msg->entete);
-//     msg->port_udp = ntohs(msg->port_udp);
-//     msg->port_diff = ntohs(msg->port_diff);
-//     return msg;
-// }
 
 void print_ServerMessage22(const ServerMessage22 *msg){
     char buf[INET6_ADDRSTRLEN];
@@ -446,36 +431,6 @@ void* receive_chat_message(void *arg){
         }
     }
 
-    // while(total < 3){
-    //     if((r = recv(thread->socket, msg + total, 3 - total, 0)) < 0) {
-    //         perror("recv");
-    //         game_running = 0;
-    //         return -1;
-    //     }
-    //     if(r == 0){
-    //         perror("Connection closed by remote server");
-    //         game_running = 0;
-    //         return 0;
-    //     }
-    //     total += r;
-    // }
-    //..
-    // total -= 3;
-    // while(total < msg->len){
-    //     if((r = recv(thread->socket, &(msg->data) + total, msg->len - total, 0)) < 0){
-    //         perror("receive_chat_message recv msg ");
-    //         game_running = 0;
-    //         return -1;
-    //     }
-    //     if(r == 0){
-    //         perror("Connection closed by remote server");
-    //         game_running = 0;
-    //     }
-    //     total += r;
-    // }
-    // Update the message buffers
-    //..
-
     end:
         debug_printf("thread for chat message finished");
         free(msg);
@@ -609,7 +564,7 @@ ACTION input_thread(ThreadArgs * arg){
         case KEY_RIGHT:
             r = RIGHT;
             break;
-        case 'q':
+        case '~':
             debug_printf("game endded");
             r = QUIT;
             break;

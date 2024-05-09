@@ -573,41 +573,23 @@ void *receive_game_data_thread(void *args){
                 // check if it's the whole grid
                 if (ntohs(code_req) == 88){
                     debug_printf("the whole grid");
-                    //TODO call func
                     memcpy(thread->board->grid, grid_buf+6, grid_len);
-                    print_grille(thread->board);
-                    refresh_game(thread->board, thread->line);
+
                 }else{
-                    debug_printf("we received a freq of the grid");
                     // we need to first extract the number of cells changed 
                     uint8_t nb = grid_buf[4];
 
 
                     debug_printf("taille de nb diff recu %d \n",nb);
-                    uint8_t *buff=grid_buf+5;
-                    int x=0;
-                    int y=0;
-                    int v=0;
-                    for (int i = 0; i < nb*3; i++){
-                        
-                        if (i % 3 == 0){
-                            y=buff[i];
-                            fprintf(stderr, " hauteur : %d", buff[i]);
-                        }else if (i % 3 == 1){
-                            x=buff[i];
-                            fprintf(stderr, " largeur : %d", buff[i]);
-                        }else{
-                            v=buff[i];
-                            fprintf(stderr, "case numero : %d \n", buff[i]);
-                            set_grid(thread->board,x,y,v);
-                        }
-                        
+                    uint8_t offset = 5;
+                    for(uint8_t i = 0; i < nb; i++){
+                        set_grid(thread->board, grid_buf[offset + i + 1], grid_buf[offset + i], grid_buf[offset + i + 2]);
+                        offset += 2;
                     }
-                    debug_printf("after freq\n");
-                    print_grille(thread->board);
 
-                    refresh_game(thread->board, thread->line);
                 }
+                print_grille(thread->board);
+                refresh_game(thread->board, thread->line);
             }
         }
     }

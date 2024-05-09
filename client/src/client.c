@@ -38,6 +38,7 @@ int main(int argc, char *argv[]){
 
     debug_printf("the socket is %d", socket_tcp);
     printf("Ready to connect to the new game ?y /n\n");
+    
     read_input_char(&rep, "yn");
     if ((rep == 'n') || (rep == 'N'))
         goto end;
@@ -60,9 +61,13 @@ int main(int argc, char *argv[]){
         goto end;
     }
 
+    debug_printf("juste before recieve info");
+
     player_data = receive_info(socket_tcp);
-    if (player_data == NULL)
-        goto end;
+    if (player_data == NULL) goto end;
+
+    debug_printf("fin  recieve info");
+
 
     print_ServerMessage22(player_data);
 
@@ -175,7 +180,7 @@ int main(int argc, char *argv[]){
         }
     }
 
-    for(int i = 0; i < nbthreads - 1; i++){
+    for(int i = 0; i < nbthreads-1; i++){
         pthread_join(threads[i],NULL);
     }
 
@@ -259,6 +264,7 @@ ServerMessage22 *receive_info(int socket_tcp){
         perror("malloc msg");
         return NULL;
     }
+    printf("size of SERVERMESSAGE22 %ld \n",sizeof(ServerMessage22));
     int totale = read_tcp(socket_tcp, msg, 22);
 
     if (totale != 22){
@@ -437,6 +443,9 @@ void* receive_chat_message(void *arg){
         return NULL;
 }
 
+
+
+
 void *receive_game_data_thread(void *args){
     ThreadArgs * thread = (ThreadArgs *) args;
 
@@ -457,6 +466,7 @@ void *receive_game_data_thread(void *args){
         }else{
             if(!*(thread->is_initialized)){
                 uint8_t buf[1600];
+                debug_printf("taille de buf %ld",sizeof(buf));
                 if((bytes_recv = recv(thread->socket, buf, sizeof(buf), 0)) > 0){
                     memcpy(&gamedata.codereq_id_eq, buf, sizeof(uint16_t));
                     gamedata.codereq_id_eq = ntohs(gamedata.codereq_id_eq);
@@ -502,12 +512,14 @@ void *receive_game_data_thread(void *args){
                 // while(game_running){
                 grid_len = thread->board->h * thread->board->w;
                 uint8_t grid_buf[grid_len + 6];
+                memset(grid_buf,0,grid_len+6);
 
                 // memset(buf,0,grid_len + 6);
                 if((bytes_recv = recv(thread->socket, grid_buf, grid_len + 6, 0)) <= 0){
                     perror("Error on recv for game data");
                     continue;
                 }
+                debug_printf("byte total recv %d \n",bytes_recv);
                 // extract the codereq to see if it's the whole grid or not
                 uint16_t code_req;
                 memcpy(&code_req, grid_buf, sizeof(uint16_t));
@@ -516,19 +528,23 @@ void *receive_game_data_thread(void *args){
                 // check if it's the whole grid
                 if (ntohs(code_req) == 88){
                     debug_printf("the whole grid");
-                    //TODO call func
                     memcpy(thread->board->grid, grid_buf+6, grid_len);
-                    print_grille(thread->board);
-                    refresh_game(thread->board, thread->line);
+
                 }else{
-                    debug_printf("we received a freq of the grid");
                     // we need to first extract the number of cells changed 
                     uint8_t nb = grid_buf[4];
+
+
+                    debug_printf("taille de nb diff recu %d \n",nb);
+                    uint8_t offset = 5;
                     for(uint8_t i = 0; i < nb; i++){
-                        set_grid(thread->board, grid_buf[5 + i + 1], grid_buf[5 + i], grid_buf[5 + i + 2]);
+                        set_grid(thread->board, grid_buf[offset + i + 1], grid_buf[offset + i], grid_buf[offset + i + 2]);
+                        offset += 2;
                     }
-                    refresh_game(thread->board, thread->line);
+
                 }
+                print_grille(thread->board);
+                refresh_game(thread->board, thread->line);
             }
         }
     }
@@ -551,7 +567,10 @@ ACTION input_thread(ThreadArgs * arg){
         }
         prev_c = c;
     }
-    switch(prev_c){
+    switch(prev_c) {
+        case KEY_BACKSPACE:
+            r = BOMB;
+            break;
         case KEY_UP:
             r = UP;
             break;

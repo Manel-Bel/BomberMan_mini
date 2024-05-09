@@ -129,6 +129,8 @@ ACTION control(Line* l) {
     }
     ACTION a = NONE;
     switch (prev_c) {
+        // case KEY_BACKSPACE:
+        //     a = BOMB; break;
         case ERR: break;
         case KEY_LEFT:
             a = LEFT; break;
@@ -155,6 +157,7 @@ bool perform_action(Board* b, Pos* p, ACTION a) {
     int xd = 0;
     int yd = 0;
     switch (a) {
+        // case BOMB:
         case LEFT:
             xd = -1; yd = 0; break;
         case RIGHT:
@@ -170,7 +173,7 @@ bool perform_action(Board* b, Pos* p, ACTION a) {
     p->x += xd; p->y += yd;
     p->x = (p->x + b->w)%b->w;
     p->y = (p->y + b->h)%b->h;
-    set_grid(b,p->x,p->y,1);
+    //set_grid(b,p->x,p->y,1);
     return false;
 }
 

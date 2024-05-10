@@ -403,7 +403,7 @@ void *server_game(void *args)
           if(sendCompleteBoard(g, numc)<0){
             goto end;
           }
-          debug_printf("send completboard");
+          debug_printf("send completboard num ==%d",numc);
           numc++;
         }
         else if (fds[i].fd == timerfb)
@@ -415,6 +415,7 @@ void *server_game(void *args)
             goto end;
           }
           debug_printf("send freq");
+          numf++;
           update_bombs(g);
 
         }

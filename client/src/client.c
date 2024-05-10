@@ -31,9 +31,9 @@ int main(int argc, char *argv[]){
 
     debug_printf("the tcp_socket is %d", socket_tcp);
 
-    printf("Ready to connect to the new game ?y /n\n");
+    printf("Ready to connect to the new game ?y/n\n");
     
-    read_input_char(&rep, "yn");
+    read_input_char(&rep, "yYnN");
     if ((rep == 'n') || (rep == 'N'))
         return 0;
 
@@ -70,8 +70,11 @@ int main(int argc, char *argv[]){
     if(line == NULL)
         goto end;
     memset(line, '\0', sizeof(*line));
+
+    //garder les numero de messages 
     uint16_t num_msg_joueur = -1;
     uint16_t num_msg_server;
+    uint16_t num_msg_freq;
 
 
     struct pollfd fds[MAX_FDS];
@@ -124,7 +127,7 @@ int main(int argc, char *argv[]){
 
     
     //TODO un thread en background qui attend la grille puis affiche
-    ThreadArgs argsGame = {.socket = socket_multidiff, .player_data = player_data ,.board=board,.line=line, .is_initialized = &is_initialized, .num_msg = &num_msg_server};
+    ThreadArgs argsGame = {.socket = socket_multidiff, .player_data = player_data ,.board=board,.line=line, .is_initialized = &is_initialized, .num_msg = &num_msg_server, .num_msg_freq = &num_msg_freq };
 
     ThreadArgs argsUdp = {.socket = socket_udp, .player_data = player_data ,.board = board, .line = line,.addr_udp = &addr_udp, .num_msg = &num_msg_joueur };
 
@@ -492,13 +495,23 @@ void* receive_chat_message(void *arg){
     return NULL;
 }
 
+uint8_t msg_ignored(const uint16_t new_msg, uint16_t *current_msg){
+
+    if(new_msg > *current_msg || new_msg < *current_msg - UINT16_MAX / 2) {
+        *current_msg = new_msg;
+        debug_printf("Message non ignoré: %u", *current_msg);
+        return 0;
+    }
+    debug_printf("Message ignoré: %d", new_msg);
+    return 1;
+}
 
 void *receive_game_data_thread(void *args){
     ThreadArgs * thread = (ThreadArgs *) args;
 
     struct pollfd fds[1];
     fds[0].fd = thread->socket;
-    fds[0].events =  POLLIN;
+    fds[0].events = POLLIN;
 
     int grid_len;
     uint16_t codereq_id_eq;
@@ -573,44 +586,41 @@ void *receive_game_data_thread(void *args){
                 perror("Error on recv for game data");
                 continue;
             }
+
             debug_printf("byte total recv for grid %d \n",bytes_recv);
 
             uint16_t num;
             memcpy(&num, grid_buf + sizeof(uint16_t), sizeof(uint16_t));
             num = ntohs(num);
 
-            //check if we ignore the msg or not
-            if(num > *thread->num_msg || num < *thread->num_msg - UINT16_MAX / 2) {
-                *thread->num_msg = num;
-                debug_printf("Message non ignoré: %u", *thread->num_msg);
+            // extract the codereq to see if it's the whole grid or not
+            memcpy(&codereq_id_eq, grid_buf, sizeof(uint16_t));
 
-                // extract the codereq to see if it's the whole grid or not
-                memcpy(&codereq_id_eq, grid_buf, sizeof(uint16_t));
+            // check if it's the whole grid
+            if (ntohs(codereq_id_eq) == 88){
+                if(msg_ignored(num, thread->num_msg))
+                    continue;
 
-                // check if it's the whole grid
-                if (ntohs(codereq_id_eq) == 88){
-                    debug_printf("the whole grid");
-                    memcpy(thread->board->grid, grid_buf+6, grid_len);
+                debug_printf("the whole grid");
+                memcpy(thread->board->grid, grid_buf+6, grid_len);
 
-                }else{
-                    // we need to first extract the number of cells changed 
-                    uint8_t nb = grid_buf[4];
-
-
-                    debug_printf("taille de nb diff recu %d \n",nb);
-                    uint8_t offset = 5;
-                    for(uint8_t i = 0; i < nb; i++){
-                        set_grid(thread->board, grid_buf[offset + i + 1], grid_buf[offset + i], grid_buf[offset + i + 2]);
-                        offset += 2;
-                    }
-
-                }
-                // print_grille(thread->board);
-                refresh_game(thread->board, thread->line);
             }else{
-                debug_printf("Message ignoré: %d", num);
-                continue;
+                if(msg_ignored(num, thread->num_msg_freq))
+                    continue;
+                // we need to first extract the number of cells changed 
+                uint8_t nb = grid_buf[4];
+
+
+                debug_printf("taille de nb diff recu %d \n",nb);
+                uint8_t offset = 5;
+                for(uint8_t i = 0; i < nb; i++){
+                    set_grid(thread->board, grid_buf[offset + i + 1], grid_buf[offset + i], grid_buf[offset + i + 2]);
+                    offset += 2;
+                }
+
             }
+            // print_grille(thread->board);
+            refresh_game(thread->board, thread->line);
         }
     // }
     }
@@ -619,7 +629,7 @@ void *receive_game_data_thread(void *args){
     return NULL;
 }
 
-ACTION input_thread(ThreadArgs * arg){
+ACTION input_thread(void *arg){
     ThreadArgs *thread = (ThreadArgs *) arg;
     ACTION r = NONE;
     // while(game_running){
@@ -637,31 +647,39 @@ ACTION input_thread(ThreadArgs * arg){
         case KEY_BACKSPACE:
             r = BOMB;
             break;
+
         case KEY_UP:
             r = UP;
             break;
+
         case KEY_DOWN:
             r = DOWN;
             break;
+
         case KEY_LEFT:
             r = LEFT;
             break;
+
         case KEY_RIGHT:
             r = RIGHT;
             break;
+
         case '~':
             debug_printf("game endded");
             r = QUIT;
             break;
+
         case '@':
             debug_printf("message pour equipe");
             thread->line->for_team = 1;
             break;
+
         case '\n': 
             debug_printf("contenu de line dans input_thread %s", thread->line->data);
             if(strlen(thread->line->data) > 0)
                 r = TCHAT;
             break;
+
         default:
             if (prev_c >= ' ' && prev_c <= '~' && thread->line->cursor < TEXT_SIZE){
                 thread->line->data[(thread->line->cursor)++] = prev_c;
@@ -702,8 +720,10 @@ int send_action_udp(const ThreadArgs* thread, ACTION action){
     msg.codereq_id_eq = htons(codereq | (id << 1) | eq );
 
     *thread->num_msg = (*thread->num_msg + 1 ) % 8191 ;
+
     debug_printf("CODEREQ: %u ID: %u EQ: %u", codereq, id, eq);
     debug_printf("msg number %u",*thread->num_msg);
+
     msg.num_action = htons((*thread->num_msg << 3) | action);
 
     ssize_t bytes_sent = sendto(thread->socket, &msg, sizeof(msg), 0, (struct sockaddr *)(thread->addr_udp), sizeof(*(thread->addr_udp)));

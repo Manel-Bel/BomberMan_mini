@@ -1,14 +1,6 @@
 // Build with -lncurses option
 #include "../header/util.h"
 
-// void setup_board(Board* board){
-//     int lines; int columns;
-//     getmaxyx(stdscr,lines,columns);
-//     debug_printf("ligne %d, colonne %d", lines, columns);
-//     board->h = lines - 2 - 1 -2; // 2 rows reserved for border, 1 rows for writing chat message, 2 row for printing the last 2 messages
-//     board->w = columns - 2; // 2 columns reserved for border
-//     board->grid = calloc((board->w)*(board->h),sizeof(char));
-// }
 
 void free_board(Board* board){
     free(board->grid);
@@ -177,42 +169,4 @@ bool perform_action(Board* b, Pos* p, ACTION a) {
     return false;
 }
 
-
-//
-// int main666()
-// {
-//     Board* b = malloc(sizeof(Board));
-//     Line* l = malloc(sizeof(Line));
-//     l->cursor = 0;
-//     memset(l->data, 0, TEXT_SIZE);// Initialize the text buffer
-//     Pos* p = malloc(sizeof(Pos));
-//     p->x = 10; p->y = 10;
-// 
-//     // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
-//     initscr(); /* Start curses mode */
-//     raw(); /* Disable line buffering */
-//     intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
-//     keypad(stdscr, TRUE); /* Required in order to get events from keyboard */
-//     nodelay(stdscr, TRUE); /* Make getch non-blocking */
-//     noecho(); /* Don't echo() while we do getch (we will manually print characters when relevant) */
-//     curs_set(0); // Set the cursor to invisible
-//     start_color(); // Enable colors
-//     init_pair(1, COLOR_YELLOW, COLOR_BLACK); // Define a new color style (text is yellow, background is black)
-// 
-//     setup_board(b);
-//     while (true) {
-//         ACTION a = control(l);
-//         if (perform_action(b, p, a)) break;
-//         refresh_game(b, l);
-//         usleep(30*1000);
-//     }
-//     free_board(b);
-// 
-//     curs_set(1); // Set the cursor to visible again
-//     endwin(); /* End curses mode */
-// 
-//     free(p); free(l); free(b);
-// 
-//     return 0;
-// }
 

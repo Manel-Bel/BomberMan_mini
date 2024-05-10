@@ -54,6 +54,7 @@ typedef struct {
     struct sockaddr_in6 *addr_udp;
     uint8_t *is_initialized;
     uint16_t *num_msg;
+    uint16_t *num_msg_freq;
 }ThreadArgs;
 
 //initialize the socket
@@ -68,7 +69,7 @@ int send_chat_message(const void *args);
 void* receive_chat_message(void *arg);
 void *receive_game_data_thread(void* args);
 int send_action_udp(const ThreadArgs* thread, ACTION action);
-ACTION input_thread(ThreadArgs* arg);
+ACTION input_thread(void* arg);
 int open_new_ter(const char *name);
 void clear_line_msg(Line *l);
 void init_interface();
@@ -100,6 +101,15 @@ void change_val_game_running();
 uint8_t get_val_game_running();
 
 void close_tcp_socket(int * socket_tcp);
+
+/*! \fn  msg_ignored(new_msg,current_msg)
+*  \brief  Check if the new message from the server should be ignored or not.  
+*  @param      new_msg  The new message received from the server.
+*  @param  current_msg The current message stored.
+*  \return    1 If the new message must be ignored.
+*              0 Otherwise.
+*/
+uint8_t msg_ignored(const uint16_t new_msg, uint16_t *current_msg);
 
 
 #endif 

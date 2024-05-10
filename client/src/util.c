@@ -35,6 +35,7 @@ int get_grid(Board* b, int x, int y){
 void set_grid(Board* b, int x, int y, int v){
     b->grid[y*b->w + x] = v;
 }
+
 void refresh_game(Board* b, Line* l) {
     // Update grid
     int x,y;
@@ -145,28 +146,41 @@ ACTION control(Line* l) {
     return a;
 }
 
-bool perform_action(Board* b, Pos* p, ACTION a) {
-    int xd = 0;
-    int yd = 0;
-    switch (a) {
-        // case BOMB:
-        case LEFT:
-            xd = -1; yd = 0; break;
-        case RIGHT:
-            xd = 1; yd = 0; break;
-        case UP:
-            xd = 0; yd = -1; break;
-        case DOWN:
-            xd = 0; yd = 1; break;
-        case QUIT:
-            return true;
-        default: break;
+int open_new_ter(const char *name){
+    int fd = open(name, O_WRONLY | O_CREAT, 0644);
+    if(fd == -1){
+        perror("Error while redirecting");
+        return -1;
     }
-    p->x += xd; p->y += yd;
-    p->x = (p->x + b->w)%b->w;
-    p->y = (p->y + b->h)%b->h;
-    //set_grid(b,p->x,p->y,1);
-    return false;
+    if(dup2(fd, STDERR_FILENO) == -1){
+        perror("Errror while redirection stderr");
+        return -1;
+    }
+    close(fd);
+    return 1;
 }
 
+void clear_line_msg(Line *l){
+    l->cursor = 0;
+    memset(l->data, 0, TEXT_SIZE);
+    l->for_team = 0;
+    debug_printf("msg in line cleared");
+}
 
+void init_interface(){
+    // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
+    initscr();
+    raw();
+    intrflush(stdscr, FALSE);
+    keypad(stdscr, TRUE);
+    nodelay(stdscr, TRUE);
+    noecho();
+    curs_set(0);
+    start_color();
+    init_pair(1, COLOR_YELLOW, COLOR_BLACK); 
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    init_pair(3, COLOR_BLUE, COLOR_BLACK);
+    init_pair(4, COLOR_RED, COLOR_BLACK);
+    init_pair(5, COLOR_WHITE, COLOR_BLACK);
+
+}

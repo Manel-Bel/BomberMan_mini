@@ -3,8 +3,8 @@
 uint16_t game_running = 1;
 pthread_mutex_t mutex_game_running = PTHREAD_MUTEX_INITIALIZER;
 uint16_t je_suis_elimine = 0;
-pthread_mutex_t mutex_socket_tcp = PTHREAD_MUTEX_INITIALIZER;
 
+// changement
 int main(int argc, char *argv[]){
     char rep;
     char *redirection;
@@ -77,14 +77,6 @@ int main(int argc, char *argv[]){
     uint16_t num_msg_freq;
 
 
-    struct pollfd fds[MAX_FDS];
-    fds[0].fd = STDIN_FILENO;
-    fds[0].events = POLLIN;
-
-    fds[1].fd = socket_udp;
-    fds[1].events = POLLOUT;
-    fds[2].fd = socket_tcp;
-    fds[2].events = POLLOUT;
     // fds[3].fd = socket_multidiff;
     // fds[3].events = POLLIN;
 
@@ -118,12 +110,20 @@ int main(int argc, char *argv[]){
         goto end;
 
     // tell the server i am ready to play
-    // if (send_message_2(socket_tcp, header_2bytes) == -1)
     if (send_tcp(socket_tcp, &header_2bytes, 2) == -1)
         goto end;
     debug_printf("je crois debut de la partie");
 
     init_interface();
+
+    struct pollfd fds[MAX_FDS];
+    fds[0].fd = STDIN_FILENO;
+    fds[0].events = POLLIN;
+
+    fds[1].fd = socket_udp;
+    fds[1].events = POLLOUT;
+    fds[2].fd = socket_tcp;
+    fds[2].events = POLLOUT;
 
     
     //TODO un thread en background qui attend la grille puis affiche
@@ -176,7 +176,6 @@ int main(int argc, char *argv[]){
                                 if(result == -1){
                                     change_val_game_running();
                                     debug_printf("closing tcp in main send_chat_message");
-                                    close_tcp_socket(&socket_tcp);
                                     break;
                                 }
                             }
@@ -184,8 +183,7 @@ int main(int argc, char *argv[]){
                         if(action_r == QUIT){
                             change_val_game_running();
                             debug_printf("closing tcp in main quit");
-                            close_tcp_socket(&socket_tcp);
-                            goto end;
+                            break;
                         }
                         if(fds[1].revents & POLLOUT) //udp ready to send
                             send_action_udp(&argsUdp, action_r); //poll for socket 
@@ -215,37 +213,6 @@ int main(int argc, char *argv[]){
     return 0;
 }
 
-int open_new_ter(const char *name){
-    int fd = open(name, O_WRONLY | O_CREAT, 0644);
-    if(fd == -1){
-        perror("Error while redirecting");
-        return -1;
-    }
-    if(dup2(fd, STDERR_FILENO) == -1){
-        perror("Errror while redirection stderr");
-        return -1;
-    }
-    close(fd);
-    return 1;
-}
-
-void init_interface(){
-    // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
-    initscr();
-    raw();
-    intrflush(stdscr, FALSE);
-    keypad(stdscr, TRUE);
-    nodelay(stdscr, TRUE);
-    noecho();
-    curs_set(0);
-    start_color();
-    init_pair(1, COLOR_YELLOW, COLOR_BLACK); 
-    init_pair(2, COLOR_GREEN, COLOR_BLACK);
-    init_pair(3, COLOR_BLUE, COLOR_BLACK);
-    init_pair(4, COLOR_RED, COLOR_BLACK);
-    init_pair(5, COLOR_WHITE, COLOR_BLACK);
-
-}
 
 int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp){
     *socket_tcp = socket(AF_INET6, SOCK_STREAM, 0);
@@ -405,15 +372,6 @@ int send_chat_message(const void *args){
 }
 
 
-void close_tcp_socket(int * socket_tcp){
-    pthread_mutex_lock(&mutex_socket_tcp);
-    if(*socket_tcp > -1){
-        close(*socket_tcp);
-        *socket_tcp=-1;
-    }
-    pthread_mutex_unlock(&mutex_socket_tcp);
-}
-
 void* receive_chat_message(void *arg){
     
     ThreadArgs *thread = (ThreadArgs *) arg;
@@ -432,62 +390,57 @@ void* receive_chat_message(void *arg){
                 break;
             }
             memset(msg,0,sizeof(ChatMessage));
-            ret = poll(fds, 1,-1); 
+            ret = poll(fds, 1,2000); 
             if(ret == -1){
                 perror("Error polling thread chat ");
                 break;
             }
-            //read the cored_eq_id + len of msg
-            //  pthread_mutex_lock(&mutex_socket_tcp);
-            // if(thread->socket < 0){
-            //     pthread_mutex_unlock(&mutex_socket_tcp);
-            //     break;
-            // }
-            // pthread_mutex_unlock(&mutex_socket_tcp);
-            r = read_tcp(thread->socket, msg,3);
-            if(r < 1){
-                debug_printf("maybe closed server, first read");
-                change_val_game_running();
-                break;
-            }
-            debug_printf("receive_chat_message: nrmlm 3: %d",r);
-            msg->codereq_id_eq = ntohs(msg->codereq_id_eq);
-            uint16_t codereq = msg->codereq_id_eq >> 3;
-            int id = (msg->codereq_id_eq >> 1) & 0x3;
-            debug_printf("receive_chat_message codereq %u",codereq);
-            if(codereq > 14){
-                //TODO: handle the winner id 
-                change_val_game_running();
-                break;
-            }
+            if(ret == 0)
+                continue;
+    
+            if(((fds[0].revents & POLLIN))){
+                debug_printf("pollin tcp read");
+
+                r = read_tcp(thread->socket, msg,3);
+                if(r < 1){
+                    debug_printf("maybe closed server, first read");
+                    change_val_game_running();
+                    break;
+                }
+                debug_printf("receive_chat_message: nrmlm 3: %d",r);
+                msg->codereq_id_eq = ntohs(msg->codereq_id_eq);
+                uint16_t codereq = msg->codereq_id_eq >> 3;
+                int id = (msg->codereq_id_eq >> 1) & 0x3;
+                debug_printf("receive_chat_message codereq %u",codereq);
+                if(codereq > 14){
+                    //TODO: handle the winner id 
+                    change_val_game_running();
+                    break;
+                }
+                
+                debug_printf("receive_chat_message: msg len %u", msg->len);
+             
+                r = read_tcp(thread->socket,&(msg->data), msg->len);
+                if(r < 1) {
+                    change_val_game_running();
+                    debug_printf("maybe closed server, second read");
+                    break;
+                }
+                thread->line->id_last_msg2 = thread->line->id_last_msg1;
+                strcpy(thread->line->last_msg2, thread->line->last_msg1);
+
+                thread->line->id_last_msg1 = (id % 4) + 1;
+                strcpy(thread->line->last_msg1, msg->data);
+                debug_printf("receive_chat_message: last_msg2 %s",thread->line->last_msg2);
+
+                debug_printf("receive_chat_message: last_msg1 %s\n",thread->line->last_msg1);
+
+
+                debug_printf("CODEREQ: %u ID: %u EQ: %u", codereq, id,msg->codereq_id_eq & 0x1); // Extrait le CODEREQ id EQ
+                debug_printf("EQ: %u LEN: %u DATA: %s",msg->len, msg->data); // Extrait EQ
             
-            debug_printf("receive_chat_message: msg len %u", msg->len);
-            // ret = poll(fds, 1,-1); 
-            // if(ret == -1){
-            //     perror("Error polling");
-            //     continue;
-            // }
-            r = read_tcp(thread->socket,&(msg->data), msg->len);
-            if(r < 1) {
-                change_val_game_running();
-                debug_printf("maybe closed server, second read");
-                break;
+                refresh_game(thread->board, thread->line);
             }
-            thread->line->id_last_msg2 = thread->line->id_last_msg1;
-            strcpy(thread->line->last_msg2, thread->line->last_msg1);
-
-            thread->line->id_last_msg1 = (id % 4) + 1;
-            strcpy(thread->line->last_msg1, msg->data);
-            debug_printf("receive_chat_message: last_msg2 %s",thread->line->last_msg2);
-
-            debug_printf("receive_chat_message: last_msg1 %s\n",thread->line->last_msg1);
-
-
-            debug_printf("CODEREQ: %u ID: %u EQ: %u", codereq, id,msg->codereq_id_eq & 0x1); // Extrait le CODEREQ id EQ
-            debug_printf("EQ: %u LEN: %u DATA: %s",msg->len, msg->data); // Extrait EQ
-        
-            refresh_game(thread->board, thread->line);
-        // }
     }
 
     debug_printf("thread for chat message finished");
@@ -629,7 +582,7 @@ void *receive_game_data_thread(void *args){
     return NULL;
 }
 
-ACTION input_thread(void *arg){
+ACTION input_thread(void* arg){
     ThreadArgs *thread = (ThreadArgs *) arg;
     ACTION r = NONE;
     // while(game_running){
@@ -694,13 +647,6 @@ ACTION input_thread(void *arg){
     return r;
 }
 
-
-void clear_line_msg(Line *l){
-    l->cursor = 0;
-    memset(l->data, 0, TEXT_SIZE);
-    l->for_team = 0;
-    debug_printf("msg in line cleared");
-}
 
 int send_action_udp(const ThreadArgs* thread, ACTION action){
 

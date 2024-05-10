@@ -390,7 +390,7 @@ void* receive_chat_message(void *arg){
                 break;
             }
             memset(msg,0,sizeof(ChatMessage));
-            ret = poll(fds, 1,2000); 
+            ret = poll(fds, 1,1000); 
             if(ret == -1){
                 perror("Error polling thread chat ");
                 break;
@@ -439,7 +439,8 @@ void* receive_chat_message(void *arg){
                 debug_printf("CODEREQ: %u ID: %u EQ: %u", codereq, id,msg->codereq_id_eq & 0x1); // Extrait le CODEREQ id EQ
                 debug_printf("EQ: %u LEN: %u DATA: %s",msg->len, msg->data); // Extrait EQ
             
-                refresh_game(thread->board, thread->line);
+                // refresh_game(thread->board, thread->line);
+                refresh_game_line(thread->line,thread->board->h, thread->board->w);
             }
     }
 
@@ -472,17 +473,18 @@ void *receive_game_data_thread(void *args){
 
     ssize_t bytes_recv;
     while(1){
+        uint8_t n = get_val_game_running();
+        if(!n){
+            break;
+        }
+
         int ret = poll(fds, 1,3000); 
         if(ret < 1){
             perror("Error polling game data");
             change_val_game_running();
             break;
         }
-        // else{
-        uint8_t n = get_val_game_running();
-        if(!n){
-            break;
-        }
+        
         if(*thread->is_initialized == 0){
             uint8_t buf[1600];
             debug_printf("taille de buf %ld",sizeof(buf));
@@ -520,7 +522,7 @@ void *receive_game_data_thread(void *args){
                 debug_printf("receive_game_data_thread CODEREQ_ID_EQ: %u", codereq_id_eq);
                 debug_printf("receive_game_data_thread NUM: %u", *thread->num_msg);
                 refresh_game(thread->board, thread->line);
-                // goto end;
+                
                 continue;
             }
             perror("Error on recv for game datafirst time ");
@@ -573,7 +575,8 @@ void *receive_game_data_thread(void *args){
 
             }
             // print_grille(thread->board);
-            refresh_game(thread->board, thread->line);
+            refresh_grid(thread->board);
+            refresh();
         }
     // }
     }
@@ -634,7 +637,7 @@ ACTION input_thread(void* arg){
             break;
 
         default:
-            if (prev_c >= ' ' && prev_c <= '~' && thread->line->cursor < TEXT_SIZE){
+            if (prev_c >= ' ' && prev_c <= '~' && thread->line->cursor < TEXT_SIZE && thread->line->cursor < thread->board->w){
                 thread->line->data[(thread->line->cursor)++] = prev_c;
                 refresh_game(thread->board, thread->line);
             }

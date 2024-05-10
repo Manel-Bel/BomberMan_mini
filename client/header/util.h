@@ -46,7 +46,13 @@ typedef struct Pos{
 void free_board(Board* board);
 int get_grid(Board* b, int x, int y);
 void set_grid(Board* b, int x, int y, int v) ;
+
+void refresh_grid(Board* b);
+
+void refresh_game_line(Line* l, uint8_t h, uint8_t w);
+
 void refresh_game(Board* b, Line* l);
+
 ACTION control(Line* l);
 
 void print_grille(Board * b) ;

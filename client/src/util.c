@@ -36,7 +36,7 @@ void set_grid(Board* b, int x, int y, int v){
     b->grid[y*b->w + x] = v;
 }
 
-void refresh_game(Board* b, Line* l) {
+void refresh_grid(Board* b){
     // Update grid
     int x,y;
     for (y = 0; y < b->h; y++) {
@@ -70,17 +70,13 @@ void refresh_game(Board* b, Line* l) {
             mvaddch(y+1,x+1,c);
         }
     }
-    for (x = 0; x < b->w+2; x++) {
-        mvaddch(0, x, '-');
-        mvaddch(b->h+1, x, '-');
-    }
-    for (y = 0; y < b->h+2; y++) {
-        mvaddch(y, 0, '|');
-        mvaddch(y, b->w+1, '|');
-    }
+}
+
+void refresh_game_line(Line* l, uint8_t h, uint8_t w){
+
     // Draw chat area
-    for (y = b->h+2; y < b->h+5; y++) {
-        for (x = 0; x < b->w+2; x++) {
+    for (int y = h+2; y < h+5; y++) {
+        for (int x = 0; x < w+2; x++) {
             mvaddch(y, x, ' ');
         }
     }
@@ -88,24 +84,37 @@ void refresh_game(Board* b, Line* l) {
     // Draw last two messages
     if(l->id_last_msg2 > 0){
         attron(COLOR_PAIR(l->id_last_msg2)); // Enable custom color 2
-        mvaddstr(b->h+2, 1, l->last_msg2); // Print last message 1
+        mvaddstr(h+2, 1, l->last_msg2); // Print last message 1
         attroff(COLOR_PAIR(l->id_last_msg2));
     }
     if(l->id_last_msg1 > 0){
         attron(COLOR_PAIR(l->id_last_msg1)); // Enable custom color 3
-        mvaddstr(b->h+3, 1, l->last_msg1); // Print last message 2
+        mvaddstr(h+3, 1, l->last_msg1); // Print last message 2
         attroff(COLOR_PAIR(l->id_last_msg1));
     }
-
-
     // Update chat text
     attron(COLOR_PAIR(5)); // Enable custom color 1
     attron(A_BOLD); // Enable bold
-    mvaddstr(b->h+4, 1, l->data); // Print user input
+    mvaddstr(h+4, 1, l->data); // Print user input
     attroff(A_BOLD); // Disable bold
     attroff(COLOR_PAIR(5)); // Disable custom color 1
 
     refresh(); // Apply the changes to the terminal
+}
+
+void refresh_game(Board* b, Line* l) {
+    
+    refresh_grid(b);
+    
+    for (int x = 0; x < b->w+2; x++) {
+        mvaddch(0, x, '-');
+        mvaddch(b->h+1, x, '-');
+    }
+    for (int y = 0; y < b->h+2; y++) {
+        mvaddch(y, 0, '|');
+        mvaddch(y, b->w+1, '|');
+    }
+    refresh_game_line(l, b->h,b->w);
 }
 
 

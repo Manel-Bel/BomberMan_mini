@@ -9,36 +9,57 @@ void plant_bomb(Game *g, int x, int y) {
 
     Bomber b = {{x, y}, time(NULL), 3};  // Countdown set to 3 seconds
     g->tabbommber[g->num_bombs++] = b;
+    g->board.grid[y * g->board.w + x] = BOMB;
 }
 
 void explode_bomb(Game *g, int x, int y) {
-    int blast_radius = 2; // Adjust this value as per your game rules
+    // Update the game board to mark the bomb location as an explosion
+    g->board.grid[y * g->board.w + x] = EXPLOSION;
+    //int blast_radius = 2; 
+    // // Remove destructible walls, players, and mark explosions in the blast radius
+    // for (int k = 0; k <= blast_radius; k++) {
+    //     // Horizontal and vertical lines
+    //     for (int i = -k; i <= k; i++) {
+    //         int nx = x + i;
+    //         int ny = y;
+    //         process_cell(g, nx, ny);
 
-    // Remove destructible walls, players, and mark explosions in the blast radius
-    for (int k = 0; k <= blast_radius; k++) {
-        // Horizontal and vertical lines
-        for (int i = -k; i <= k; i++) {
-            int nx = x + i;
-            int ny = y;
-            process_cell(g, nx, ny);
-
-            nx = x;
-            ny = y + i;
-            process_cell(g, nx, ny);
-        }
+    //         nx = x;
+    //         ny = y + i;
+    //         process_cell(g, nx, ny);
+    //     }
+    // }
+  
+    //UP
+    process_cell(g, x, y + 1);
+    if (g->board.grid[(y+1) * g->board.w + x] != INDESTRUCTIBLE_WALL || g->board.grid[(y+1) * g->board.w + x] != DESTRUCTIBLE_WALL) {
+        process_cell(g, x, y + 2);
     }
+    //DOWN
+    process_cell(g, x, y - 1);
+    if (g->board.grid[(y-1) * g->board.w + x] != INDESTRUCTIBLE_WALL || g->board.grid[(y+1) * g->board.w + x] != DESTRUCTIBLE_WALL) {
+        process_cell(g, x, y - 2);
+    } 
+    //LEFT
+    process_cell(g, x - 1, y);
+    if (g->board.grid[(y) * g->board.w + x - 1] != INDESTRUCTIBLE_WALL || g->board.grid[(y+1) * g->board.w + x] != DESTRUCTIBLE_WALL) {
+        process_cell(g, x - 2, y);
+    }
+    //RIGHT
+    process_cell(g, x + 1, y);
+    if (g->board.grid[(y) * g->board.w + x + 1] != INDESTRUCTIBLE_WALL || g->board.grid[(y+1) * g->board.w + x] != DESTRUCTIBLE_WALL) {
+        process_cell(g, x + 2, y);
+    }
+
     // Diagonal lines
     process_cell(g, x - 1, y - 1);
     process_cell(g, x + 1, y - 1);
     process_cell(g, x - 1, y + 1);
     process_cell(g, x + 1, y + 1);
-
-
-    // Update the game board to mark the bomb location as an explosion
-    g->board.grid[y * g->board.w + x] = EXPLOSION;
 }
 
 void process_cell(Game *g, int x, int y) {
+    debug_printf("process_cell %d %d\n", x, y);
     // Check if the current cell is within the game board boundaries
     if (x >= 0 && x < g->board.w && y >= 0 && y < g->board.h) {
         int *cell = &g->board.grid[y * g->board.w + x];
@@ -63,6 +84,12 @@ void process_cell(Game *g, int x, int y) {
                 break;
             case EXPLOSION:
                 // Continue the explosion chain reaction
+                break;
+            case BOMB:
+                // Explode the bomb recursively
+                //if it is not the first explosion, to avoid infinite explosions:
+                if (g->tabbommber[g->num_bombs - 1].pos[0] != x && g->tabbommber[g->num_bombs - 1].pos[1] != y)
+                  explode_bomb(g, x, y);
                 break;
         }
     }

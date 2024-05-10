@@ -613,7 +613,7 @@ ACTION input_thread(ThreadArgs * arg){
         prev_c = c;
     }
     switch(prev_c) {
-        case KEY_BACKSPACE:
+        case KEY_SRIGHT:
             r = BOMB;
             break;
         case KEY_UP:

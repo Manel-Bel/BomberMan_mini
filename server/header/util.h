@@ -34,13 +34,13 @@
 #define BOMB_COUNTDOWN_INTERVAL 100 // 3 s/30,000μs = 3,000 ms/30 ms = 100
 
 typedef enum {
-    EMPTY = 0,
-    INDESTRUCTIBLE_WALL = 1,
-    DESTRUCTIBLE_WALL = 2,
-    BOMB = 3,
-    EXPLOSION = 4,
-    PLAYER_START = 5,
-    PLAYER_END = 9 //player0=5,player1=6,player2=7,player3=8
+    EMPTY = (uint8_t)0,
+    INDESTRUCTIBLE_WALL = (uint8_t)1,
+    DESTRUCTIBLE_WALL = (uint8_t)2,
+    BOMB = (uint8_t)3,
+    EXPLOSION = (uint8_t)4,
+    PLAYER_START = (uint8_t)5,
+    PLAYER_END = (uint8_t)9 //player0=5,player1=6,player2=7,player3=8
 } CellType;
 
 

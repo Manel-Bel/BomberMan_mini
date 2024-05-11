@@ -50,7 +50,7 @@ void action_perform(uint8_t *board, int x, int y, int action, Player *p, Game *g
     x2--;
     break;
   case 4:
-    board[y * W + x] = 3; // la case contient une bombe
+    board[y * W + x] = (uint8_t)3; // la case contient une bombe
     plant_bomb(game, x, y);
   default:
   }
@@ -60,7 +60,8 @@ void action_perform(uint8_t *board, int x, int y, int action, Player *p, Game *g
     if (action <= 3)
     {
       debug_printf("action realisé %d\n", action);
-      board[y * W + x] = 0;
+      if(board[y * W + x] != 3)
+        board[y * W + x] = 0;
       board[y2 * W + x2] = numcaseply;
       p->pos[0] = x2;
       p->pos[1] = y2;

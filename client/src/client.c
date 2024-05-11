@@ -600,7 +600,7 @@ ACTION input_thread(void* arg){
         prev_c = c;
     }
     switch(prev_c) {
-        case KEY_BACKSPACE:
+        case KEY_SRIGHT:
             r = BOMB;
             break;
 

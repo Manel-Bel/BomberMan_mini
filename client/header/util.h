@@ -44,7 +44,7 @@ typedef struct Pos{
 } Pos;
 
 void free_board(Board* board);
-int get_grid(Board* b, int x, int y);
+uint8_t get_grid(Board* b, int x, int y);
 void set_grid(Board* b, int x, int y, int v) ;
 
 void refresh_grid(Board* b);

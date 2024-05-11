@@ -28,7 +28,7 @@ void print_grille(Board * b){
 }
 
 
-int get_grid(Board* b, int x, int y){
+uint8_t get_grid(Board* b, int x, int y){
     return b->grid[y*b->w + x];
 }
 
@@ -42,24 +42,24 @@ void refresh_grid(Board* b){
     for (y = 0; y < b->h; y++) {
         for (x = 0; x < b->w; x++) {
             char c;
-            int value = get_grid(b,x,y);
+            uint8_t value = get_grid(b,x,y);
             if (value >= 5) {
-                c = value - 5 + '0'; // Display player ID
+                c = (char)( value - (uint8_t)5 + (uint8_t)'0'); // Display player ID
             } else {
                 switch (value) {
-                    case 0:
+                    case (uint8_t)0:
                         c = '.'; // Empty space
                         break;
-                    case 1:
+                    case (uint8_t)1:
                         c = '#'; // Indestructible wall
                         break;
-                    case 2:
+                    case (uint8_t)2:
                         c = '*'; // Destructible wall
                         break;
-                    case 3:
+                    case (uint8_t)3:
                         c = 'B'; // Bomb
                         break;
-                    case 4:
+                    case (uint8_t)4:
                         c = 'E'; // Exploded by bomb
                         break;
                     default:

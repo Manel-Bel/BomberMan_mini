@@ -1,220 +1,13 @@
 #include "../header/server.h"
 
-#define nbrply 2
-#define TEXTSIZE 255
-#define TIMES 1
 
-void action_perform(uint8_t *board, int action, Player *p, Game *game)
-{
-  int numcaseply = 5 + p->id;
-  int x=p->pos[0];
-  int y=p->pos[1];
-  int x2 = x;
-  int y2 = y;
 
-  switch (action)
-  {
-  case 0:
-    if (y <= 0)
-    {
-      return;
-    }
 
-    y2--;
 
-    break;
-  case 1:
-    if (x >= W - 1)
-    {
-      return;
-    }
 
-    x2++;
 
-    break;
 
-  case 2:
-    if (y >= H - 1)
-    {
-      return;
-    }
-    y2++;
 
-    break;
-  case 3:
-    if (x <= 0)
-    {
-      return;
-    }
-    x2--;
-    break;
-  case 4:
-    board[y * W + x] = 3; // la case contient une bombe
-    plant_bomb(game, x, y);
-  default:
-  }
-
-  if (!board[(y2)*W + x2])
-  {
-    
-    board[y * W + x] = 0;
-    board[y2 * W + x2] = numcaseply;
-    p->pos[0] = x2;
-    p->pos[1] = y2;
-    
-  }
-}
-
-/* retourne le nombre de difference entre board et board1*/
-
-int nbrDiff(uint8_t *board, char *board1)
-{
-  int comp = 0;
-  for (int i = 0; i < H * W; i++)
-  {
-    if (board1[i] != board[i])
-    {
-      comp++;
-    }
-  }
-  return comp;
-}
-
-void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff)
-{
-  int n = 0;
-  for (int i = 0; i < H; i++)
-  {
-    for (int j = 0; j < W; j++)
-    {
-      if (b[i * W + j] != bdiff[i * W + j])
-      {
-        *(buff + (n * 3)) = i;
-        *(buff + (n * 3) + 1) = j;
-        *(buff + (n * 3) + 2) = b[i * W + j];
-        n++;
-      }
-    }
-  }
-  debug_printf("le nombre de difference dans fillDif %d \n", n);
-}
-
-void handling_Action_Request(Game *g)
-{
-  uint8_t buf[4];
-  memset(buf, 0, 4);
-
-  int r = recvfrom(g->sock_udp, buf, 10, 0, NULL, NULL);
-  // debug_printf("%d octet recu\n ",r);
-  if (r < 0)
-  {
-    perror("probleme recvfrom in ghangling_Action_Request");
-  }
-
-  uint16_t CODEREQ = *((uint16_t *)buf);
-  // printf("CODEREQ EN BE %d \n",CODEREQ);
-
-  // printf("%d\n",buf[2]);
-  // printf("%d\n",buf[3]);
-  uint16_t ACTIONLIGNE = *((uint16_t *)(buf + 2));
-  // printf("ACTIONLIGNE EN BG : %d \n",ACTIONLIGNE);
-  CODEREQ = ntohs(CODEREQ);
-  ACTIONLIGNE = ntohs(ACTIONLIGNE);
-
-  A_R action;
-  uint16_t id = (CODEREQ >> 1) & 0x3;
-  debug_printf("id recu %d\n", id);
-  action.num = (ACTIONLIGNE) >> 3;
-  action.action = (ACTIONLIGNE) & 0x7;
-  debug_printf("action recu , action est %d et son num %d\n", action.action, action.num);
-
-  if (action.action >= 0 && action.action <= 3)
-  {
-    if (action.num > g->plys[id]->moveaction.num)
-    {
-      g->plys[id]->moveaction = action;
-    }
-  }
-  else if (action.action == 4)
-  {
-    g->plys[id]->poseBombe = 1;
-  }
-  else if (action.action == 5)
-  {
-    g->plys[id]->annuleraction = 1;
-  }
-}
-
-int estGagne(Game *g)
-{
-  if (g->lenplys == 1)
-  {
-    return 1;
-  }
-  else
-  {
-    if (g->lenplys == 2 && g->mode == 2)
-    {
-      int idsurv = -1;
-      for (int i = 0; i < nbrply; i++)
-      {
-
-        if (idsurv != -1 && g->plys[i]->stat == 0)
-        {
-          if (idsurv != g->plys[i]->idEq)
-          {
-            return 0;
-          }
-        }
-
-        if (idsurv == -1 && g->plys[i]->stat == 0)
-        {
-          idsurv = g->plys[i]->idEq;
-        }
-      }
-      return 1;
-    }
-  }
-  return 0;
-}
-
-void putPlayersOnBoard(Game *g)
-{
-  for (int i = 0; i < g->lenplys; i++)
-  {
-    Player *player = g->plys[i];
-
-    // Set initial positions based on player ID
-    switch (player->id)
-    {
-    case 0:
-      player->pos[0] = 0; // Top left corner
-      player->pos[1] = 0;
-      break;
-    case 1:
-      player->pos[0] = W - 1; // Bottom right corner
-      player->pos[1] = H - 1;
-      break;
-    case 2:
-      player->pos[0] = 0; // Bottom left corner
-      player->pos[1] = H - 1;
-      break;
-    case 3:
-      player->pos[0] = W - 1; // Top right corner
-      player->pos[1] = 0;
-      break;
-    default:
-      // Handle error case
-      perror("Invalid player ID in putPlayersOnBoard");
-      return;
-    }
-
-    // Mark player's position on the game board
-    int x = player->pos[0];
-    int y = player->pos[1];
-    g->board.grid[y * W + x] = 5 + player->id;
-  }
-}
 
 void *server_game(void *args)
 {
@@ -226,8 +19,10 @@ void *server_game(void *args)
   struct pollfd fds[g->lenplys + 3];
   memset(fds, 0, sizeof(fds));
 
+  init_grille(g->board.grid);
   /*put players on board*/
   putPlayersOnBoard(g);
+  
 
   /*set a timer for completboard*/
   struct itimerspec timer1_val;
@@ -241,8 +36,8 @@ void *server_game(void *args)
     return NULL;
   }
 
-  timer1_val.it_value.tv_sec = 1;    // premiere expiration dans 1 seconde
-  timer1_val.it_interval.tv_sec = 1; // intervalle d'exp dans 1 s
+  timer1_val.it_value.tv_sec = TIMES;    // premiere expiration dans 1 seconde
+  timer1_val.it_interval.tv_sec = TIMES; // intervalle d'exp dans 1 s
   timerfd_settime(timercb, 0, &timer1_val, NULL);
 
   /*set a timer for freqboard*/
@@ -299,7 +94,7 @@ void *server_game(void *args)
 
   while (1)
   {
-    if (nbrplys == 0 )
+    if (nbrplys == 0)
     {
       break;
     }
@@ -321,6 +116,7 @@ void *server_game(void *args)
             goto end;
           }
           debug_printf("send completboard");
+          print_grille(&g->board);
           numc++;
         }
         else if (fds[i].fd == timerfb)
@@ -328,13 +124,14 @@ void *server_game(void *args)
           uint64_t expirations;
           read(timerfb, &expirations, sizeof(expirations));
           printf("freq Timer expired %" PRIu64 " times\n", expirations);
-          if (sendfreqBoard(g, numf) < 0)
+          if(sendfreqBoard(g, numf) < 0)
           {
             goto end;
           }
           debug_printf("send freq");
           update_bombs(g);
           numf++;
+          
         }
         else if (fds[i].fd == g->sock_udp)
         {
@@ -349,14 +146,13 @@ void *server_game(void *args)
             int equipe = 0;
             int r = readTchat(bufTCHAT, fds[i].fd, &equipe);
             if (r <= 0){
-              fds[i] = fds[nfds - 1];
-              nfds -= 1;
-              g->lenplys--;
+              fds[i].fd = -1;
+              
               nbrplys--;
               debug_printf("decrementer %d \n",nbrplys);
 
             }else{
-              int ids = g->plys[i - 3]->idEq;
+              int ids = g->plys[i-3]->idEq;
               if (equipe){
                 if (g->mode != 2)
                   continue;
@@ -417,7 +213,15 @@ int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab)
 
   // add player in game and send port and initinfo to player
   g[i]->plys[g[i]->lenplys] = p;
+  
   p->id=g[i]->lenplys;
+  if(mode==2){
+    if(p->id<(nbrply/2)){
+      p->idEq=0;
+    }else{
+      p->idEq=1;
+    }
+  }
   sendPlayerInfo(p, mode, g[i]->addr_mdiff.sin6_addr, g[i]->port_udp, g[i]->port_mdiff);
   debug_printf("fin de player \n");
   g[i]->lenplys++;
@@ -443,8 +247,7 @@ void index_in_game(Game **g, int size, int sock, int *pos1, int *pos2)
 }
 
 /* thread principal qui accepte que les demandes de connexion*/
-int main_serveur(int freq)
-{
+int main_serveur(int freq){
 
   /* pas communication entre les parties donc possibilité d'utiliser processus que processus leger*/
   struct sockaddr_in6 address_sock;

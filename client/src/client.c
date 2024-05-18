@@ -606,7 +606,7 @@ ACTION input_thread(void* arg){
         prev_c = c;
     }
     switch(prev_c) {
-        case '#':
+        case '$':
             r = BOMB;
             break;
 

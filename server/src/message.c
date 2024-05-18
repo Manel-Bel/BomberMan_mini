@@ -106,7 +106,7 @@ int sendPlayerInfo(Player *p, int mode, struct in6_addr add, int port_udp, int p
   memcpy(&an.ADDRDIFF, &add, sizeof(add));
   printf("coreq envoyé est %d\n", mode + 8);
   
-  an.entete = ((mode + 8) << 3) | (p->id << 1) | p->idEq;
+  an.entete = ((mode + 8) << 3) | (p->id << 1) | (p->idEq);
   printf("an.entete %d en LE \n", an.entete);
   an.entete=htons(an.entete);
   printf("entete %d en BE\n",an.entete);
@@ -310,7 +310,7 @@ int sendfreqBoard(Game *g, int n){
       g->plys[i]->moveaction.action=-1;
     }
     if(g->plys[i]->poseBombe){
-      action_perform(g->board.grid,BOMB,g->plys[i],g);
+      action_perform(g->board.grid,4,g->plys[i],g);
       g->plys[i]->poseBombe=0;
     }
 
@@ -388,6 +388,7 @@ int readTchat(uint8_t *buf, int sock, int *equipe)
   debug_printf("CODEREQ : %d\n", ntohs(*CODEREQ_ID_REQ) >> 3);
   if (codereq == 8)
   {
+    
     *equipe = 1;
     *CODEREQ_ID_REQ = htons(14 << 3 | id_eq);
 

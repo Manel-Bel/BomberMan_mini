@@ -33,8 +33,11 @@
 #define SIZEBOMBER 40
 #define BOMB_COUNTDOWN_INTERVAL 100 // 3 s/30,000μs = 3,000 ms/30 ms = 100
 
-#define H 30
-#define W 100
+#define H 20
+#define W 20
+#define nbrply 2
+#define TEXTSIZE 255
+#define TIMES 1
 
 typedef enum {
     EMPTY = (uint8_t)0,

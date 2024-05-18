@@ -39,5 +39,13 @@ void free_games(Game **games, int len);
 void free_game(Game *g);
 void free_player(Player *p);
 void initplayer(Player *p, int id, int idEq);
+void action_perform(uint8_t *board, int action, Player *p,Game *g);
+int nbrDiff(uint8_t *board, char *board1);
+void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff);
+void handling_Action_Request(Game *g);
+void process_cell(Game *g, int x, int y);
+int estGagne(Game *g);
+void putPlayersOnBoard(Game *g);
+
 
 #endif

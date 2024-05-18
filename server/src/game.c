@@ -105,24 +105,95 @@ void process_cell(Game *g, int x, int y) {
                 break;
         }
     }
-    print_grille_1D(g->board.grid);
+    //print_grille_1D(g->board.grid);
 }
 
 void update_bombs(Game *g) {
     time_t current_time = time(NULL);
 
     for (int i = 0; i < g->num_bombs; i++) {
-        Bomber *b = &g->tabbommber[i];
+        Bomber b = g->tabbommber[i];
 
         // Calculate the elapsed time since the bomb was planted
-        time_t elapsed_time = current_time - b->start_time;
+        time_t elapsed_time = current_time - b.start_time;
 
-        if (elapsed_time >= b->coundown) {
-            explode_bomb(g, b->pos[0], b->pos[1]);
+        if (elapsed_time >= b.coundown) {
+            explode_bomb(g, b.pos[0], b.pos[1]);
             //remove the bomb from the array
             g->tabbommber[i] = g->tabbommber[--g->num_bombs];
         }
     }
+}
+
+int estGagne(Game *g)
+{
+  if (g->lenplys == 1)
+  {
+    return 1;
+  }
+  else
+  {
+    if (g->lenplys == 2 && g->mode == 2)
+    {
+      int idsurv = -1;
+      for (int i = 0; i < nbrply; i++)
+      {
+
+        if (idsurv != -1 && g->plys[i]->stat == 0)
+        {
+          if (idsurv != g->plys[i]->idEq)
+          {
+            return 0;
+          }
+        }
+
+        if (idsurv == -1 && g->plys[i]->stat == 0)
+        {
+          idsurv = g->plys[i]->idEq;
+        }
+      }
+      return 1;
+    }
+  }
+  return 0;
+}
+
+void putPlayersOnBoard(Game *g)
+{
+  for (int i = 0; i < g->lenplys; i++)
+  {
+    Player *player = g->plys[i];
+
+    // Set initial positions based on player ID
+    switch (player->id)
+    {
+    case 0:
+      player->pos[0] = 0; // Top left corner
+      player->pos[1] = 0;
+      break;
+    case 1:
+      player->pos[0] = W - 1; // Bottom right corner
+      player->pos[1] = H - 1;
+      break;
+    case 2:
+      player->pos[0] = 0; // Bottom left corner
+      player->pos[1] = H - 1;
+      break;
+    case 3:
+      player->pos[0] = W - 1; // Top right corner
+      player->pos[1] = 0;
+      break;
+    default:
+      // Handle error case
+      perror("Invalid player ID in putPlayersOnBoard");
+      return;
+    }
+
+    // Mark player's position on the game board
+    int x = player->pos[0];
+    int y = player->pos[1];
+    g->board.grid[y * W + x] = 5 + player->id;
+  }
 }
 
 
@@ -236,8 +307,11 @@ int initgame(Game *g, char mode, int h, int w)
   }
 
   g->board.grid = malloc(h * w);
+  init_grille(g->board.grid);
   g->board.h = h;
   g->board.w = w;
+  g->num_bombs=0;
+
   if (g->board.grid == NULL)
   {
     perror("problem malloc in createBoard");
@@ -302,6 +376,150 @@ int initgame(Game *g, char mode, int h, int w)
 
   return 0;
 }
+
+void action_perform(uint8_t *board, int action, Player *p, Game *game)
+{
+  int numcaseply = 5 + p->id;
+  int x=p->pos[0];
+  int y=p->pos[1];
+  int x2 = x;
+  int y2 = y;
+
+  switch (action)
+  {
+  case 0:
+    if (y <= 0)
+    {
+      return;
+    }
+
+    y2--;
+
+    break;
+  case 1:
+    if (x >= W - 1)
+    {
+      return;
+    }
+
+    x2++;
+
+    break;
+
+  case 2:
+    if (y >= H - 1)
+    {
+      return;
+    }
+    y2++;
+
+    break;
+  case 3:
+    if (x <= 0)
+    {
+      return;
+    }
+    x2--;
+    break;
+  case 4:
+    board[y * W + x] = 3; // la case contient une bombe
+    plant_bomb(game, x, y);
+  default:
+  }
+
+  if (!board[(y2)*W + x2])
+  {
+    
+    board[y * W + x] = 0;
+    board[y2 * W + x2] = numcaseply;
+    p->pos[0] = x2;
+    p->pos[1] = y2;
+    
+  }
+}
+
+/* retourne le nombre de difference entre board et board1*/
+
+int nbrDiff(uint8_t *board, char *board1)
+{
+  int comp = 0;
+  for (int i = 0; i < H * W; i++)
+  {
+    if (board1[i] != board[i])
+    {
+      comp++;
+    }
+  }
+  return comp;
+}
+
+void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff)
+{
+  int n = 0;
+  for (int i = 0; i < H; i++)
+  {
+    for (int j = 0; j < W; j++)
+    {
+      if (b[i * W + j] != bdiff[i * W + j])
+      {
+        *(buff + (n * 3)) = i;
+        *(buff + (n * 3) + 1) = j;
+        *(buff + (n * 3) + 2) = b[i * W + j];
+        n++;
+      }
+    }
+  }
+  debug_printf("le nombre de difference dans fillDif %d \n", n);
+}
+
+
+void handling_Action_Request(Game *g)
+{
+  uint8_t buf[4];
+  memset(buf, 0, 4);
+
+  int r = recvfrom(g->sock_udp, buf, 10, 0, NULL, NULL);
+  // debug_printf("%d octet recu\n ",r);
+  if (r < 0)
+  {
+    perror("probleme recvfrom in ghangling_Action_Request");
+  }
+
+  uint16_t CODEREQ = *((uint16_t *)buf);
+  // printf("CODEREQ EN BE %d \n",CODEREQ);
+
+  // printf("%d\n",buf[2]);
+  // printf("%d\n",buf[3]);
+  uint16_t ACTIONLIGNE = *((uint16_t *)(buf + 2));
+  // printf("ACTIONLIGNE EN BG : %d \n",ACTIONLIGNE);
+  CODEREQ = ntohs(CODEREQ);
+  ACTIONLIGNE = ntohs(ACTIONLIGNE);
+
+  A_R action;
+  uint16_t id = (CODEREQ >> 1) & 0x3;
+  debug_printf("id recu %d\n", id);
+  action.num = (ACTIONLIGNE) >> 3;
+  action.action = (ACTIONLIGNE) & 0x7;
+  debug_printf("action recu , action est %d et son num %d\n", action.action, action.num);
+
+  if (action.action >= 0 && action.action <= 3)
+  {
+    if (action.num > g->plys[id]->moveaction.num)
+    {
+      g->plys[id]->moveaction = action;
+    }
+  }
+  else if (action.action == 4)
+  {
+    g->plys[id]->poseBombe = 1;
+  }
+  else if (action.action == 5)
+  {
+    g->plys[id]->annuleraction = 1;
+  }
+}
+
+
 
 
  

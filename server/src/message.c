@@ -105,9 +105,12 @@ int sendPlayerInfo(Player *p, int mode, struct in6_addr add, int port_udp, int p
   An_In an;
   memcpy(&an.ADDRDIFF, &add, sizeof(add));
   printf("coreq envoyé est %d\n", mode + 8);
-
-  an.entete = htons((mode + 8) << 3 | (p->id << 1) | p->idEq);
-  printf("an.entete %d\n", ntohs(an.entete));
+  
+  an.entete = ((mode + 8) << 3) | (p->id << 1) | p->idEq;
+  printf("an.entete %d en LE \n", an.entete);
+  an.entete=htons(an.entete);
+  printf("entete %d en BE\n",an.entete);
+ 
   an.PORTUDP = htons(port_udp);
   an.PORTMDIFF = htons(port_mdiff);
   int r = sendTCP(p->sockcom, &an, sizeof(an));
@@ -143,6 +146,7 @@ int r_ecvRequestReady(int sock, char mode)
   uint16_t h = ntohs(an.entete);
   uint16_t codeReq = (h >> 3) & 0xFFFF;
   printf("recu %d dans recvRequestReady\n", codeReq);
+  printf("mode %d \n",mode);
   if (codeReq == mode + 2 && codeReq <= 4 && codeReq > 2)
   {
     return 1;
@@ -294,8 +298,6 @@ int sendfreqBoard(Game *g, int n){
 
 
     int moved = 0;
-
-   
    
     if(!moved &&g->plys[i]->annuleraction){
       moved=1;

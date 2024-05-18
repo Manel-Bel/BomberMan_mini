@@ -98,8 +98,7 @@ int main(int argc, char *argv[]){
     // fds[3].fd = socket_multidiff;
     // fds[3].events = POLLIN;
 
-    printf("%s adr_tcp->sin6_addr\n",adr_tcp->sin6_addr);
-    if(init_udp_adr(&socket_udp, player_data, &addr_udp, adr_tcp->sin6_addr) == -1)
+    if(init_udp_adr(&socket_udp, player_data, &addr_udp, &adr_tcp) == -1)
         goto end;
     // s'abonner à l'adresse de multidiffusion du serveur pour recevoir les messages des autres
     if (subscribe_multicast(&socket_multidiff, player_data, &addr_recv_multicast) == -1)
@@ -338,7 +337,7 @@ int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_dat
     return 0;
 }
 
-int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct sockaddr_in6 *addr_udp, char * server_add){
+int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct sockaddr_in6 *addr_udp, struct sockaddr_in6 *addr){
     // Initialiser la socket UDP
     debug_printf("init_udp_adr : init udp");
     if ((*sock_udp = socket(AF_INET6, SOCK_DGRAM, 0)) == -1){
@@ -355,8 +354,9 @@ int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct socka
     memset(addr_udp, 0, sizeof(*addr_udp));
     addr_udp->sin6_family = AF_INET6;
     addr_udp->sin6_port = htons(player_data->port_udp);
+    addr_udp->sin6_addr = addr->sin6_addr;
 
-    inet_pton(AF_INET6, server_add, &addr_udp->sin6_addr);
+    // inet_pton(AF_INET6, server_add, &addr_udp->sin6_addr);
     // memcpy(&addr_udp->sin6_addr,&(player_data->adr),sizeof(player_data->adr));
     return 0;
 }
@@ -392,13 +392,12 @@ void* receive_chat_message(void *arg){
     ThreadArgs *thread = (ThreadArgs *) arg;
     // ssize_t total = 0;
     ssize_t r;
-    int ret;
     ChatMessage *msg = malloc(sizeof(ChatMessage));
 
     struct pollfd fds[1];
     fds[0].fd = thread->socket;
     fds[0].events = POLLIN;
-
+    int ret;
     while(1){
             uint8_t n = get_val_game_running();
             if(!n){
@@ -483,20 +482,20 @@ void *receive_game_data_thread(void *args){
     int grid_len;
     uint16_t codereq_id_eq;
     // memset(buf, 0, sizeof(buf));
-
+    int ret;
     ssize_t bytes_recv;
     while(1){
         uint8_t n = get_val_game_running();
         if(!n){
             break;
         }
-	ret = poll(fds, 1,5000); 
+	    ret = poll(fds, 1,5000); 
         if(ret == -1){
            perror("Error polling rGRID");
-	   change_val_game_running();
+	        change_val_game_running();
             break;
-         }
-         if(ret == 0)
+        }
+        if(ret == 0)
             continue;
         
         if(*thread->is_initialized == 0){

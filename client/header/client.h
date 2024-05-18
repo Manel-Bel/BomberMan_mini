@@ -61,7 +61,7 @@ int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp);
 ServerMessage22* receive_info(int socket_tcp);
 void print_ServerMessage22(const ServerMessage22* msg);
 int subscribe_multicast(int* socket_multidiff, const ServerMessage22* player_data, struct sockaddr_in6* adr);
-int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct sockaddr_in6 *addr_udp, char * server_add);
+int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct sockaddr_in6 *addr_udp, struct sockaddr_in6 *addr);
 int send_chat_message(const void *args);
 void* receive_chat_message(void *arg);
 void* receive_game_data_thread(void* args);

@@ -1,0 +1,27 @@
+[31m MAIN[m the tcp_socket is 3.
+[31m MAIN[m header_2bytes à envoyé 8.
+le taille de size_msg 2 
+.
+send_tcp: the total now is 2.
+fin de send_tcp.
+read_tcp: the total now is 22.
+
+-------------------------------.
+En-tête : 32748.
+Port UDP : 10362.
+Port de diffusion : 20587.
+Adresse IP : ff12:2c9:6ccf:3e10:ecae:a37a:dba4:980c.
+-------------------------------.
+init_udp_adr : init udp.
+[31m MAIN[m codereq de server 4093.
+[31m MAIN[m id 2.
+[31m MAIN[m eq 0.
+le taille de size_msg 2 
+.
+send_tcp: the total now is 2.
+fin de send_tcp.
+[31m MAIN[m debut de la partie.
+Connection closed by remote server: Success
+[32m receive TCP[m maybe closed server, first read.
+[34m INPUT [m contenu de line.
+[32m receive TCP[m finished.

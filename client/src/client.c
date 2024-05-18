@@ -488,13 +488,14 @@ void *receive_game_data_thread(void *args){
         if(!n){
             break;
         }
-
-        int ret = poll(fds, 1,5000); 
-        if(ret < 1){
-            perror("Error polling RGRID");
-            change_val_game_running();
+	ret = poll(fds, 1,5000); 
+        if(ret == -1){
+           perror("Error polling rGRID");
+	   change_val_game_running();
             break;
-        }
+         }
+         if(ret == 0)
+            continue;
         
         if(*thread->is_initialized == 0){
             uint8_t buf[1600];

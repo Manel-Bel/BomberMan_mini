@@ -2,6 +2,7 @@
 #include "../header/util.h"
 
 
+
 void free_board(Board* board){
     free(board->grid);
 }
@@ -174,6 +175,15 @@ void clear_line_msg(Line *l){
     memset(l->data, 0, TEXT_SIZE);
     l->for_team = 0;
     debug_printf("msg in line cleared");
+}
+
+
+uint16_t *extract_codereq_id_eq(uint16_t entete){
+
+}
+
+void init_codereq_id_eq(uint16_t codereq, uint16_t id, uint16_t eq){
+
 }
 
 void init_interface(){

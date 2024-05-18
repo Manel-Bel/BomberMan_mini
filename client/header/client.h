@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <poll.h>
+#include <netdb.h>
 #include "util.h"
 #include "debug.h"
 
@@ -94,14 +95,19 @@ void change_val_game_running();
 
 uint8_t get_val_game_running();
 
-/*! \fn  msg_ignored(new_msg,current_msg)
+/*! \fn  msg_ignore(new_msg,current_msg)
 *  \brief  Check if the new message from the server should be ignored or not.  
 *  @param      new_msg  The new message received from the server.
 *  @param  current_msg The current message stored.
-*  \return    1 If the new message must be ignored.
-*              0 Otherwise.
+*  \return    1 If the new message must be ignored. 0 Otherwise.
 */
-uint8_t msg_ignored(const uint16_t new_msg, uint16_t *current_msg);
+uint8_t msg_ignore(const uint16_t new_msg, uint16_t *current_msg);
+
+
+int get_server_address(int *socket_tcp, const char *server_add, struct sockaddr_in6 *adr_tcp);
+
+
+void affiche_adresse(struct sockaddr_in6 adr);
 
 
 #endif 

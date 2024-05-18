@@ -9,6 +9,6 @@ void debug_printf(const char *format, ...){
         vsprintf(buf,format,args);
         va_end(args);
         
-        fprintf(stderr,"Debug : %s.\n",buf);
+        fprintf(stderr,"%s.\n",buf);
     // #endif
 }

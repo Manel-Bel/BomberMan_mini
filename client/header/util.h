@@ -12,9 +12,9 @@
 #include "debug.h"
 
 
-#define ADDR_GAME "::1"
 #define ADDR_GAME_ "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
 #define PORT_PRINCIPAL 2024
+#define PORT_PRINCIPAL_CHAR "2024"
 
 typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT,TCHAT, NONE} ACTION;
 
@@ -62,4 +62,10 @@ void clear_line_msg(Line *l);
 int open_new_ter(const char *name);
 
 void init_interface();
+
+uint16_t *extract_codereq_id_eq(uint16_t entete);
+
+
+void init_codereq_id_eq(uint16_t codereq, uint16_t id, uint16_t eq);
+
 #endif

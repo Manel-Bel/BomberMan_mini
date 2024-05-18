@@ -25,12 +25,11 @@ int read_input_char(char * rep, const char *allowedChars){
 
 
 int read_tcp(const int socket, void *msg, const int size_msg){
-    
     int total = 0;
     int r;
     while(total < size_msg){
         if((r = recv(socket, msg + total, size_msg - total, 0)) < 0){
-            perror("recv failed:");
+            perror("recv failed");
             return -1;
         }
         if(r == 0){

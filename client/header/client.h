@@ -2,14 +2,11 @@
 #define CLIENT_H
 
 #include <unistd.h>
-#include <sys/types.h> 
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <net/if.h>
 #include <ncurses.h>
 #include <pthread.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 #include <limits.h>
 #include <sys/time.h>
 #include <netinet/in.h>
@@ -53,24 +50,23 @@ typedef struct {
     Line *line;
     struct sockaddr_in6 *addr_udp;
     uint8_t *is_initialized;
+    uint16_t *num_msg;
+    uint16_t *num_msg_freq;
 }ThreadArgs;
 
 //initialize the socket
 int connect_to_server(int *socket_tcp, struct sockaddr_in6 *adr_tcp);
-// int send_message_2(int socket_tcp, const uint16_t msg);
-// ServerMessage22 *extract_msg(void *buf);
+
 ServerMessage22* receive_info(int socket_tcp);
 void print_ServerMessage22(const ServerMessage22* msg);
-int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_data, struct sockaddr_in6 *adr);
-int init_udp_adr(int *sock_udp, const ServerMessage22* player_data, struct sockaddr_in6 *addr_udp);
+int subscribe_multicast(int* socket_multidiff, const ServerMessage22* player_data, struct sockaddr_in6* adr);
+int init_udp_adr(int* sock_udp, const ServerMessage22* player_data, struct sockaddr_in6 *addr_udp);
 int send_chat_message(const void *args);
 void* receive_chat_message(void *arg);
-void *receive_game_data_thread(void* args);
-int send_action_udp(const ThreadArgs* thread, ACTION action,uint16_t num);
-ACTION input_thread(ThreadArgs* arg);
+void* receive_game_data_thread(void* args);
+int send_action_udp(const ThreadArgs* thread, ACTION action);
+ACTION input_thread(void* arg);
 int open_new_ter(const char *name);
-void clear_line_msg(Line *l);
-void init_interface();
 
 int isInList(const char c, const char *list);
 
@@ -92,6 +88,20 @@ int read_tcp(const int socket, void * msg, const int size_msg);
 *  \param size_msg The size of the message to send.
 */
 int send_tcp(const int socket, const void * msg, const int size_msg);
+
+
+void change_val_game_running();
+
+uint8_t get_val_game_running();
+
+/*! \fn  msg_ignored(new_msg,current_msg)
+*  \brief  Check if the new message from the server should be ignored or not.  
+*  @param      new_msg  The new message received from the server.
+*  @param  current_msg The current message stored.
+*  \return    1 If the new message must be ignored.
+*              0 Otherwise.
+*/
+uint8_t msg_ignored(const uint16_t new_msg, uint16_t *current_msg);
 
 
 #endif 

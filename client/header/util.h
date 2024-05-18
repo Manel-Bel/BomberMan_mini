@@ -6,6 +6,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/types.h> 
 #include "debug.h"
 
 
@@ -40,12 +43,23 @@ typedef struct Pos{
 
 } Pos;
 
-void setup_board(Board* board);
 void free_board(Board* board);
-int get_grid(Board* b, int x, int y);
+uint8_t get_grid(Board* b, int x, int y);
 void set_grid(Board* b, int x, int y, int v) ;
+
+void refresh_grid(Board* b);
+
+void refresh_game_line(Line* l, uint8_t h, uint8_t w);
+
 void refresh_game(Board* b, Line* l);
+
 ACTION control(Line* l);
-bool perform_action(Board* b, Pos* p, ACTION a);
+
 void print_grille(Board * b) ;
+
+void clear_line_msg(Line *l);
+
+int open_new_ter(const char *name);
+
+void init_interface();
 #endif

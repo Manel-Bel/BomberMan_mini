@@ -1,14 +1,6 @@
 // Build with -lncurses option
 #include "../header/util.h"
 
-void setup_board(Board* board){
-    int lines; int columns;
-    getmaxyx(stdscr,lines,columns);
-    debug_printf("ligne %d, colonne %d", lines, columns);
-    board->h = lines - 2 - 1 -2; // 2 rows reserved for border, 1 rows for writing chat message, 2 row for printing the last 2 messages
-    board->w = columns - 2; // 2 columns reserved for border
-    board->grid = calloc((board->w)*(board->h),sizeof(char));
-}
 
 void free_board(Board* board){
     free(board->grid);
@@ -36,37 +28,38 @@ void print_grille(Board * b){
 }
 
 
-int get_grid(Board* b, int x, int y){
+uint8_t get_grid(Board* b, int x, int y){
     return b->grid[y*b->w + x];
 }
 
 void set_grid(Board* b, int x, int y, int v){
     b->grid[y*b->w + x] = v;
 }
-void refresh_game(Board* b, Line* l) {
+
+void refresh_grid(Board* b){
     // Update grid
     int x,y;
     for (y = 0; y < b->h; y++) {
         for (x = 0; x < b->w; x++) {
             char c;
-            int value = get_grid(b,x,y);
+            uint8_t value = get_grid(b,x,y);
             if (value >= 5) {
-                c = value - 5 + '0'; // Display player ID
+                c = (char)( value - (uint8_t)5 + (uint8_t)'0'); // Display player ID
             } else {
                 switch (value) {
-                    case 0:
+                    case (uint8_t)0:
                         c = '.'; // Empty space
                         break;
-                    case 1:
+                    case (uint8_t)1:
                         c = '#'; // Indestructible wall
                         break;
-                    case 2:
+                    case (uint8_t)2:
                         c = '*'; // Destructible wall
                         break;
-                    case 3:
+                    case (uint8_t)3:
                         c = 'B'; // Bomb
                         break;
-                    case 4:
+                    case (uint8_t)4:
                         c = 'E'; // Exploded by bomb
                         break;
                     default:
@@ -77,17 +70,13 @@ void refresh_game(Board* b, Line* l) {
             mvaddch(y+1,x+1,c);
         }
     }
-    for (x = 0; x < b->w+2; x++) {
-        mvaddch(0, x, '-');
-        mvaddch(b->h+1, x, '-');
-    }
-    for (y = 0; y < b->h+2; y++) {
-        mvaddch(y, 0, '|');
-        mvaddch(y, b->w+1, '|');
-    }
+}
+
+void refresh_game_line(Line* l, uint8_t h, uint8_t w){
+
     // Draw chat area
-    for (y = b->h+2; y < b->h+5; y++) {
-        for (x = 0; x < b->w+2; x++) {
+    for (int y = h+2; y < h+5; y++) {
+        for (int x = 0; x < w+2; x++) {
             mvaddch(y, x, ' ');
         }
     }
@@ -95,24 +84,37 @@ void refresh_game(Board* b, Line* l) {
     // Draw last two messages
     if(l->id_last_msg2 > 0){
         attron(COLOR_PAIR(l->id_last_msg2)); // Enable custom color 2
-        mvaddstr(b->h+2, 1, l->last_msg2); // Print last message 1
+        mvaddstr(h+2, 1, l->last_msg2); // Print last message 1
         attroff(COLOR_PAIR(l->id_last_msg2));
     }
     if(l->id_last_msg1 > 0){
         attron(COLOR_PAIR(l->id_last_msg1)); // Enable custom color 3
-        mvaddstr(b->h+3, 1, l->last_msg1); // Print last message 2
+        mvaddstr(h+3, 1, l->last_msg1); // Print last message 2
         attroff(COLOR_PAIR(l->id_last_msg1));
     }
-
-
     // Update chat text
     attron(COLOR_PAIR(5)); // Enable custom color 1
     attron(A_BOLD); // Enable bold
-    mvaddstr(b->h+4, 1, l->data); // Print user input
+    mvaddstr(h+4, 1, l->data); // Print user input
     attroff(A_BOLD); // Disable bold
     attroff(COLOR_PAIR(5)); // Disable custom color 1
 
     refresh(); // Apply the changes to the terminal
+}
+
+void refresh_game(Board* b, Line* l) {
+    
+    refresh_grid(b);
+    
+    for (int x = 0; x < b->w+2; x++) {
+        mvaddch(0, x, '-');
+        mvaddch(b->h+1, x, '-');
+    }
+    for (int y = 0; y < b->h+2; y++) {
+        mvaddch(y, 0, '|');
+        mvaddch(y, b->w+1, '|');
+    }
+    refresh_game_line(l, b->h,b->w);
 }
 
 
@@ -153,65 +155,41 @@ ACTION control(Line* l) {
     return a;
 }
 
-bool perform_action(Board* b, Pos* p, ACTION a) {
-    int xd = 0;
-    int yd = 0;
-    switch (a) {
-        // case BOMB:
-        case LEFT:
-            xd = -1; yd = 0; break;
-        case RIGHT:
-            xd = 1; yd = 0; break;
-        case UP:
-            xd = 0; yd = -1; break;
-        case DOWN:
-            xd = 0; yd = 1; break;
-        case QUIT:
-            return true;
-        default: break;
+int open_new_ter(const char *name){
+    int fd = open(name, O_WRONLY | O_CREAT, 0644);
+    if(fd == -1){
+        perror("Error while redirecting");
+        return -1;
     }
-    p->x += xd; p->y += yd;
-    p->x = (p->x + b->w)%b->w;
-    p->y = (p->y + b->h)%b->h;
-    //set_grid(b,p->x,p->y,1);
-    return false;
+    if(dup2(fd, STDERR_FILENO) == -1){
+        perror("Errror while redirection stderr");
+        return -1;
+    }
+    close(fd);
+    return 1;
 }
 
-
-
-int main666()
-{
-    Board* b = malloc(sizeof(Board));
-    Line* l = malloc(sizeof(Line));
+void clear_line_msg(Line *l){
     l->cursor = 0;
-    memset(l->data, 0, TEXT_SIZE);// Initialize the text buffer
-    Pos* p = malloc(sizeof(Pos));
-    p->x = 10; p->y = 10;
+    memset(l->data, 0, TEXT_SIZE);
+    l->for_team = 0;
+    debug_printf("msg in line cleared");
+}
 
+void init_interface(){
     // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
-    initscr(); /* Start curses mode */
-    raw(); /* Disable line buffering */
-    intrflush(stdscr, FALSE); /* No need to flush when intr key is pressed */
-    keypad(stdscr, TRUE); /* Required in order to get events from keyboard */
-    nodelay(stdscr, TRUE); /* Make getch non-blocking */
-    noecho(); /* Don't echo() while we do getch (we will manually print characters when relevant) */
-    curs_set(0); // Set the cursor to invisible
-    start_color(); // Enable colors
-    init_pair(1, COLOR_YELLOW, COLOR_BLACK); // Define a new color style (text is yellow, background is black)
+    initscr();
+    raw();
+    intrflush(stdscr, FALSE);
+    keypad(stdscr, TRUE);
+    nodelay(stdscr, TRUE);
+    noecho();
+    curs_set(0);
+    start_color();
+    init_pair(1, COLOR_YELLOW, COLOR_BLACK); 
+    init_pair(2, COLOR_GREEN, COLOR_BLACK);
+    init_pair(3, COLOR_BLUE, COLOR_BLACK);
+    init_pair(4, COLOR_RED, COLOR_BLACK);
+    init_pair(5, COLOR_WHITE, COLOR_BLACK);
 
-    setup_board(b);
-    while (true) {
-        ACTION a = control(l);
-        if (perform_action(b, p, a)) break;
-        refresh_game(b, l);
-        usleep(30*1000);
-    }
-    free_board(b);
-
-    curs_set(1); // Set the cursor to visible again
-    endwin(); /* End curses mode */
-
-    free(p); free(l); free(b);
-
-    return 0;
 }

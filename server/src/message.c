@@ -324,8 +324,8 @@ int sendfreqBoard(Game *g, int n){
   /* count difference*/
 
   int nb = nbrDiff(g->board.grid, g->lastmultiboard);
-  if (nb <= 0)
-  {
+  if (nb <= 0){
+    debug_printf("pas de diff %d \n", nb);
     return 0;
   }
   debug_printf("nombre de diff %d \n", nb);

@@ -120,7 +120,7 @@ int sendPlayerInfo(Player *p, int mode, struct in6_addr add, int port_udp, int p
 }
 
 // if mode==codereq-2 then 1 else 0
-int recvRequestReady(int sock, char mode)
+int r_ecvRequestReady(int sock, char mode)
 {
 
   Answer an;
@@ -144,6 +144,20 @@ int recvRequestReady(int sock, char mode)
   uint16_t codeReq = (h >> 3) & 0xFFFF;
   printf("recu %d dans recvRequestReady\n", codeReq);
   if (codeReq == mode + 2 && codeReq <= 4 && codeReq > 2)
+  {
+    return 1;
+  }
+  return 0;
+}
+
+//traiter ready request 
+int recvRequestReady(uint8_t *buff,char mode){
+  debug_printf("dans revRequest\n");
+  uint16_t h = ntohs(*((uint16_t *) buff));
+  uint16_t codeReq = (h >> 3) & 0xFFFF;
+  debug_printf("%d \n",codeReq);
+  printf("recu %d dans recvRequestReady\n", codeReq);
+  if (codeReq == mode + 2)
   {
     return 1;
   }
@@ -189,21 +203,18 @@ int recvTCP(int sock, void *buf, int size)
   /*int entetelue=0;
    */
 
-  while (total < size)
-  {
+  while (total < size){
     int nbr = recv(sock, buf + total, size - total, 0);
-    if (nbr < 0)
-    {
+    if (nbr < 0){
       perror("recv error in recvTCP");
       return -1;
     }
-    if (nbr == 0)
-    {
+    if (nbr == 0){
       perror("connexion fermé client in sendTCP");
       return 0;
     }
     total += nbr;
-    printf("recvTCP totale %d", total);
+    printf("recvTCP totale %d\n", total);
   }
   return total;
 }
@@ -265,6 +276,7 @@ int sendCompleteBoard(Game *g, int n)
   an.num = htons(n);
   an.hauteur = g->board.h;
   an.largeur = g->board.w;
+  
   memcpy(an.board, g->board.grid, g->board.h * g->board.w);
   memcpy(g->lastmultiboard, an.board, an.hauteur * an.largeur);
 
@@ -277,75 +289,33 @@ int sendCompleteBoard(Game *g, int n)
   return r;
 }
 
-int sendfreqBoard(Game *g, int n)
-{
-  for (int i = 0; i < g->lenplys; i++)
-  {
+int sendfreqBoard(Game *g, int n){
+  for (int i = 0; i < g->lenplys; i++){
 
-    int len = g->plys[i]->len;
-
-    debug_printf("la taille de action recuperer  %d  \n ", len);
-    A_R tabaction[len];
-    memcpy(tabaction, g->plys[i]->tabAction, len * sizeof(A_R));
 
     int moved = 0;
-    int bombered = 0;
 
-    for (int j = 0; j < len; j++)
-    {
-      if (!moved || !bombered)
-      {
-
-        switch (tabaction[len - j - 1].action)
-        {
-        case 0:
-        case 1:
-        case 2:
-        case 3:
-
-          if (!moved)
-          {
-            debug_printf("num traité num : %d\n", tabaction[len - j - 1].num);
-            debug_printf("perform\n");
-            debug_printf("action 0 à3 \n");
-            action_perform((g->board.grid), g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i], g);
-            // print_grille_1D((g->board.grid));
-
-            moved = 1;
-          }
-
-          break;
-        case 4:
-
-          if (!bombered)
-          {
-            debug_printf("num traité num : %d\n", tabaction[len - j - 1].num);
-            action_perform(g->board.grid, g->plys[i]->pos[0], g->plys[i]->pos[1], tabaction[j].action, g->plys[i], g);
-            bombered = 1;
-          }
-
-          break;
-        case 5:
-          if (!moved)
-          {
-            debug_printf("num traité num : %d\n", tabaction[len - j - 1].num);
-            moved = 1;
-          }
-          break;
-        default:
-          debug_printf("dans aucun de ces cas \n");
-          break;
-        }
-      }
-      else
-      {
-        break;
-      }
+   
+   
+    if(!moved &&g->plys[i]->annuleraction){
+      moved=1;
+      g->plys[i]->moveaction.action=-1;
+      g->plys[i]->annuleraction=0;
     }
-    /* on retire les actions traité de la table*/
-    memcpy(g->plys[i]->tabAction, g->plys[i]->tabAction + len, len * sizeof(A_R));
-    g->plys[i]->len -= len;
-  }
+    if(!moved && g->plys[i]->moveaction.action!=-1){
+      action_perform(g->board.grid,g->plys[i]->moveaction.action,g->plys[i],g);
+      moved=1;
+      g->plys[i]->moveaction.action=-1;
+    }
+    if(g->plys[i]->poseBombe){
+      action_perform(g->board.grid,BOMB,g->plys[i],g);
+      g->plys[i]->poseBombe=0;
+    }
+
+  }    
+    
+    
+  
 
   /* after all request we will send the difference */
 
@@ -398,6 +368,7 @@ int sendfreqBoard(Game *g, int n)
 }
 
 
+
 int readTchat(uint8_t *buf, int sock, int *equipe)
 {
 
@@ -413,12 +384,16 @@ int readTchat(uint8_t *buf, int sock, int *equipe)
   uint16_t codereq = ntohs((*CODEREQ_ID_REQ) >> 3);
   uint8_t id_eq = ntohs(*CODEREQ_ID_REQ) & 0x7;
   debug_printf("CODEREQ : %d\n", ntohs(*CODEREQ_ID_REQ) >> 3);
-  if (codereq == 14)
+  if (codereq == 8)
   {
     *equipe = 1;
+    *CODEREQ_ID_REQ = htons(14 << 3 | id_eq);
+
+  }else{
+    *CODEREQ_ID_REQ = htons(13 << 3 | id_eq);
   }
 
-  *CODEREQ_ID_REQ = htons(13 << 3 | id_eq);
+  
 
   uint8_t len = *(buf + 2);
   debug_printf("len recu %d\n", len);

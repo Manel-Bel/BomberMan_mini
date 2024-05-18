@@ -66,7 +66,7 @@ int init_udp_adr(int *sock_udp, const ServerMessage22* player_data, struct socka
 int send_chat_message(const void *args);
 void* receive_chat_message(void *arg);
 void *receive_game_data_thread(void* args);
-int send_action_udp(const ThreadArgs* thread, ACTION action);
+int send_action_udp(const ThreadArgs* thread, ACTION action,uint16_t num);
 ACTION input_thread(ThreadArgs* arg);
 int open_new_ter(const char *name);
 void clear_line_msg(Line *l);

@@ -13,18 +13,20 @@
 struct Game{
   Player *plys[4];
   int lenplys; // nombre joueur en cours
+  int nbrready;
   char mode; // game mode, 1: 4p , 2 : equipes;
+  
   int sock_udp;
   int sock_mdiff;
   int port_udp;
-  int port_mdifff;
+  int port_mdiff;
   struct sockaddr_in6 addr_mdiff;
+
   struct Board board;
   char *lastmultiboard;
 
   Bomber tabbommber[SIZEBOMBER];
   int *winner;
-
   int freq;
   int num_bombs;  // Number of active bombs
 };
@@ -37,7 +39,5 @@ void free_games(Game **games, int len);
 void free_game(Game *g);
 void free_player(Player *p);
 void initplayer(Player *p, int id, int idEq);
-int addPlayerInGame(Game *g,int sock, int nbrply);
-
 
 #endif

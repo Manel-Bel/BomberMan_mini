@@ -104,6 +104,7 @@ int main(int argc, char *argv[]){
         codereq = 4 << 3;
     }
     header_2bytes = htons(codereq | (id << 1) | eq);
+    debug_printf("ready code %d\n",header_2bytes);
 
     printf("are you ready to start the game?y or n \n");
 
@@ -143,6 +144,7 @@ int main(int argc, char *argv[]){
     
 
     int result;
+    uint16_t naction=0;
     while(game_running){
         int ret = poll(fds, MAX_FDS,-1); 
         if(ret == -1){
@@ -173,7 +175,8 @@ int main(int argc, char *argv[]){
                             break;
                         }
 				        if(fds[1].revents & POLLOUT) //udp ready to send
-                        	send_action_udp(&argsUdp, action_r); //poll for socket 
+                        	send_action_udp(&argsUdp, action_r,naction); //poll for socket 
+                            naction++;
 			            }
                     }
             }
@@ -686,13 +689,13 @@ void clear_line_msg(Line *l){
     debug_printf("msg in line cleared");
 }
 
-int send_action_udp(const ThreadArgs* thread, ACTION action){
+int send_action_udp(const ThreadArgs* thread, ACTION action,uint16_t num){
     //TODO: gerer codereq
     Action_msg msg;
     msg.codereq_id_eq = htons(thread->player_data->entete);
     
     //TODO : gerer le numero du message du client 
-    uint16_t num_msg = 2;
+    uint16_t num_msg = num;
     debug_printf("msg  number %u",num_msg << 3 | action);
     msg.num_action = htons((num_msg << 3) | action);
 

@@ -33,6 +33,9 @@
 #define SIZEBOMBER 40
 #define BOMB_COUNTDOWN_INTERVAL 100 // 3 s/30,000μs = 3,000 ms/30 ms = 100
 
+#define H 30
+#define W 100
+
 typedef enum {
     EMPTY = 0,
     INDESTRUCTIBLE_WALL = 1,

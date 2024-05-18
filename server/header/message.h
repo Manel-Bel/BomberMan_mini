@@ -19,7 +19,7 @@ struct answerBoard{
   uint16_t num;
   uint8_t hauteur;
   uint8_t largeur;
-  char board[400];
+  char board[H*W];
 };
 typedef struct answerBoard An_Board;
 
@@ -61,7 +61,7 @@ int recvTCP(int sock, void *buf, int size);
 /* retourne la taille de data send sinon un nombre <=0 */
 int sendTCP(int sock, void *buf, int size);
 /*verifier si le joueur est bien pret , retourne 1 si il est pret sinon 0*/
-int recvRequestReady(int sock,char mode);
+int recvRequestReady(uint8_t *buff,char mode);
 /* envoie les informations sur les addresse multicast et port , si reussi retourne 0 sinon 1*/
 int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
 /* retroune la taille total recu, en cas d'echec retourne un nombre <=0*/

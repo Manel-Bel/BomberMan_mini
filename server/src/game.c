@@ -91,22 +91,7 @@ void update_bombs(Game *g) {
 
 
 
-/*retourne 0 si l'ajout est reussi ,1 sinon*/
-int addPlayerInGame(Game *g,int sock, int nbrply)
-{
 
-    if (g->lenplys >= nbrply)
-    {
-
-      return 1;
-    }
-    int idEq = (g->mode == 2 && g->lenplys > 1) ? 1 : 0;
-    Player *p=createplayer(g->lenplys,sock, idEq);
-    if(p==NULL) return 1;
-    g->plys[g->lenplys]=p;
-    g->lenplys += 1;
-    return 0;
-  }
 
 
 
@@ -201,6 +186,7 @@ int initgame(Game *g, char mode, int h, int w)
   g->lenplys = 0;
   g->mode = mode;
   g->lastmultiboard = malloc(h * w);
+  g->nbrready=0;
 
   if (g->lastmultiboard == NULL)
   {
@@ -260,9 +246,9 @@ int initgame(Game *g, char mode, int h, int w)
   debug_printf("generer Port avant\n");
   int port_mdiff = genePort();
   debug_printf("generer port apres\n");
-  g->port_mdifff = port_mdiff;
+  g->port_mdiff = port_mdiff;
 
-  r = serverMultiCast(g->sock_mdiff, g->port_mdifff, &g->addr_mdiff);
+  r = serverMultiCast(g->sock_mdiff, g->port_mdiff, &g->addr_mdiff);
 
   if (r)
   {

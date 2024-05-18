@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "../header/grille_test.h"
+#include "../header/util.h"
 
-#define H 20
-#define W 20
 
 void init_grille(uint8_t *grille) {
     // Initialize all positions as empty space

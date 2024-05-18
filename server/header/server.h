@@ -37,18 +37,14 @@ typedef struct Argsurveillants argsurv;
 
 
 int estGagne(Game *g);
-void *surveiller(void *args);
 int serverUdp(int sock, int port);
 int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul);
-void action_perform(uint8_t *board, int x, int y, int action, Player *p,Game *g);
+void action_perform(uint8_t *board, int action, Player *p,Game *g);
 int nbrDiff(uint8_t *board, char *board1);
 void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff);
-void *send_freqBoard(void *args);
 void *hanglingTchat(Game *g);
 void handling_Action_Request(Game *g);
 int sendinitInfo(Game *g);
-int waitingforReadySign(Game *g);
-void *handlingRequest1(void *args);
 
 
 

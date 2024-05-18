@@ -13,6 +13,8 @@ uint16_t je_suis_elimine = 0;
 
 
 
+
+
 int main(int argc, char *argv[]){
 
     if (argc < 2) {
@@ -96,8 +98,8 @@ int main(int argc, char *argv[]){
     // fds[3].fd = socket_multidiff;
     // fds[3].events = POLLIN;
 
-
-    if(init_udp_adr(&socket_udp, player_data, &addr_udp) == -1)
+    printf("%s adr_tcp->sin6_addr\n",adr_tcp->sin6_addr);
+    if(init_udp_adr(&socket_udp, player_data, &addr_udp, adr_tcp->sin6_addr) == -1)
         goto end;
     // s'abonner à l'adresse de multidiffusion du serveur pour recevoir les messages des autres
     if (subscribe_multicast(&socket_multidiff, player_data, &addr_recv_multicast) == -1)
@@ -175,7 +177,7 @@ int main(int argc, char *argv[]){
         if(je_suis_elimine){
             continue;
         }
-        int ret = poll(fds, MAX_FDS,-1); 
+        int ret = poll(fds, MAX_FDS,3000); 
         if(ret == -1){
             perror("Error polling main");
             break;
@@ -258,7 +260,6 @@ ServerMessage22 *receive_info(int socket_tcp){
         perror("malloc msg");
         return NULL;
     }
-    printf("size of SERVERMESSAGE22 %ld \n",sizeof(ServerMessage22));
     int totale = read_tcp(socket_tcp, msg, 22);
 
     if (totale != 22){
@@ -336,7 +337,7 @@ int subscribe_multicast(int *socket_multidiff, const ServerMessage22 *player_dat
     return 0;
 }
 
-int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct sockaddr_in6 *addr_udp){
+int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct sockaddr_in6 *addr_udp, char * server_add){
     // Initialiser la socket UDP
     debug_printf("init_udp_adr : init udp");
     if ((*sock_udp = socket(AF_INET6, SOCK_DGRAM, 0)) == -1){
@@ -354,7 +355,7 @@ int init_udp_adr(int *sock_udp, const ServerMessage22 *player_data, struct socka
     addr_udp->sin6_family = AF_INET6;
     addr_udp->sin6_port = htons(player_data->port_udp);
 
-    inet_pton(AF_INET6, ADDR_GAME, &addr_udp->sin6_addr);
+    inet_pton(AF_INET6, server_add, &addr_udp->sin6_addr);
     // memcpy(&addr_udp->sin6_addr,&(player_data->adr),sizeof(player_data->adr));
     return 0;
 }

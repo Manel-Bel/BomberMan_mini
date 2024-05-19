@@ -158,7 +158,8 @@ int r_ecvRequestReady(int sock, char mode)
 int recvRequestReady(uint8_t *buff,char mode){
   debug_printf("dans revRequest\n");
   uint16_t h = ntohs(*((uint16_t *) buff));
-  uint16_t codeReq = (h >> 3) & 0xFFFF;
+  printf("buff recu %d \n",h);
+  uint16_t codeReq = (h >> 3);
   debug_printf("%d \n",codeReq);
   printf("recu %d dans recvRequestReady\n", codeReq);
   if (codeReq == mode + 2)

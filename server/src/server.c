@@ -3,7 +3,16 @@
 
 
 
-
+void compacttabfds(struct pollfd *fds,nfds_t *nfds){
+  size_t offset=0;
+  for(size_t i=0;i<*nfds;i++){
+    if(fds[i].fd!=-1){
+      fds[offset]=fds[i];
+      offset++;
+    }
+  }
+  *nfds=offset;
+}
 
 
 
@@ -103,74 +112,54 @@ void *server_game(void *args)
     for (size_t i = 0; i < nfds; i++)
     {
       // printf(" avant if de fd %d \n",fds[i].fd);
-      if (fds[i].fd != -1 && (fds[i].revents & POLLIN))
-      {
-        // printf(" valeur de fd %d \n",fds[i].fd);
-        if (fds[i].fd == timercb)
-        {
-          uint64_t expirations;
-          read(timercb, &expirations, sizeof(expirations));
-          printf("complete Timer expired %" PRIu64 " times\n", expirations);
-          if (sendCompleteBoard(g, numc) < 0)
-          {
-            goto end;
-          }
-          debug_printf("send completboard");
-          print_grille(&g->board);
-          numc++;
-        }
-        else if (fds[i].fd == timerfb)
-        {
-          uint64_t expirations;
-          read(timerfb, &expirations, sizeof(expirations));
-          printf("freq Timer expired %" PRIu64 " times\n", expirations);
-          if(sendfreqBoard(g, numf) < 0)
-          {
-            goto end;
-          }
-          debug_printf("send freq");
-          update_bombs(g);
-          numf++;
-          
-        }
-        else if (fds[i].fd == g->sock_udp)
-        {
-          handling_Action_Request(g);
-        }
-        else if (fds[i].fd != -1)
-        {
-          if (fds[i].revents & POLLIN)
-          {
+      if (fds[i].fd != -1){
+        if(fds[i].revents&POLLIN){
+          if (fds[i].fd == timercb){
+            uint64_t expirations;
+            read(timercb, &expirations, sizeof(expirations));
+            printf("complete Timer expired %" PRIu64 " times\n", expirations);
+            if (sendCompleteBoard(g, numc) < 0){
+              goto end;
+            }
+            debug_printf("send completboard");
+            print_grille(&g->board);
+            numc++;
+          }else if (fds[i].fd == timerfb){
+            uint64_t expirations;
+            read(timerfb, &expirations, sizeof(expirations));
+            printf("freq Timer expired %" PRIu64 " times\n", expirations);
+            if(sendfreqBoard(g, numf) < 0){
+              goto end;
+            }
+            debug_printf("send freq");
+            update_bombs(g);
+            numf++;
+          }else if(fds[i].fd == g->sock_udp){
+            handling_Action_Request(g);
+          }else{
             debug_printf("tchat");
             memset(bufTCHAT, 0, sizeof(bufTCHAT));
             int equipe = 0;
             int r = readTchat(bufTCHAT, fds[i].fd, &equipe);
             if (r <= 0){
               fds[i].fd = -1;
-              
               nbrplys--;
               debug_printf("decrementer %d \n",nbrplys);
-
             }else{
               int ids = g->plys[i-3]->idEq;
               if (equipe){
-                if (g->mode != 2)
-                  continue;
-                for (int j = 0; j < g->lenplys; j++){
-                  if (g->plys[j]->idEq == ids){
-                    if (sendTCP(g->plys[j]->sockcom, bufTCHAT, r) < 0){
-                      debug_printf("je suis dans sendtchat\n");
-                      continue;
-                    }
+                if (g->mode != 2) continue;
+              }
+              for (int j = 0; j < g->lenplys; j++){
+                if (g->plys[j]->idEq == ids){
+                  if (sendTCP(g->plys[j]->sockcom, bufTCHAT, r) < 0){
+                    debug_printf("je suis dans sendtchat\n");
                   }
                 }
-              }else{
-                sendTCPtoALL(fds + 3, g->lenplys, bufTCHAT, r);
-                debug_printf("je suis dans tcptoall\n");
               }
             }
           }
-        }
+        }        
       }
     }
   }
@@ -193,13 +182,12 @@ int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab)
   int i;
   for (i = 0; i < *lentab; i++)
   {
-    if (g[i]->lenplys < nbrply)
+    if (g[i]->lenplys < nbrply && g[i]->mode==mode)
     {
       break;
     }
   }
-  if (i == *lentab)
-  {
+  if (i == *lentab){
     g[i] = malloc(sizeof(Game));
     if (g[i] == NULL)
     {
@@ -298,11 +286,9 @@ int main_serveur(int freq){
   nfds_t nfds = 1;
 
   // tab pour les jeu en mode solo
-  Game *game_4p[1024];
-  int len4p = 0;
-  // tab pour les jeu en mode equipes
-  Game *game_eq[1024];
-  int lenEq = 0;
+  Game *games[1024];
+  int leng = 0;
+ 
 
   while (1)
   {
@@ -346,149 +332,80 @@ int main_serveur(int freq){
           fds[nfds].events = POLLIN;
           nfds += 1;
         }
-        else if (fds[i].fd != -1 )
-        {
+        else if (fds[i].fd != -1 ){
           uint8_t message[2];
           int len;
           debug_printf("attens un envoi clients ");
+
+          // on verifie si le joueur exite deja
+
+          int pos1 = -1;
+          int pos2 = -1;
+          index_in_game(games,leng,fds[i].fd,&pos1,&pos2);
+
           if ((len = recvTCP(fds[i].fd, &message, 2)) <= 0)
           {
-            // on ferme la socket
-            close(fds[i].fd);
+            
             debug_printf("dans tcp 0\n");
-            // si le joueur est dans un jeu en solo  , on le supprime du jeu
-            int pos1 = -1;
-            int pos2 = -1;
-            index_in_game(game_4p, len4p, fds[i].fd, &pos1, &pos2);
-            if (pos1 == -1 && pos2 == -1)
-            {
-              printf("pos1 %d pos2 %d\n",pos1,pos2);
-              index_in_game(game_eq, lenEq, fds[i].fd, &pos1, &pos2);
-              if (pos1 != -1 && pos2 != -1)
-              {
-                free(game_eq[pos1]->plys[pos2]);
-                game_eq[pos1]->plys[pos2] = game_eq[pos1]->plys[game_eq[pos1]->lenplys - 1];
-                game_eq[pos1]->lenplys--;
-                printf("taille de lenplys %d\n",game_eq[pos1]->lenplys);
-              }
-            }
-            else
-            {
-              printf("pos1 %d pos2 %d\n",pos1,pos2);
-              free(game_4p[pos1]->plys[pos2]);
-              game_4p[pos1]->plys[pos2] = game_4p[pos1]->plys[game_4p[pos1]->lenplys - 1];
-              game_4p[pos1]->lenplys--;
-              printf("taille de lenplys %d\n",game_4p[pos1]->lenplys);
-
+            // si le joueur est dans un jeu en solo cela veut dire qu'il est deconnecter apres initialisation  , 
+            //donc on le supprime du jeu
+            if(pos1!=-1){
+              free_player(games[pos1]->plys[pos2]);
+              memmove(games[pos1]->plys+pos2,games[pos1]->plys+pos2+1,games[pos1]->lenplys-(pos2+1));
+              games[pos1]->lenplys-=1;
+            }else{
+              close(fds[i].fd);
             }
             // on l'enleve de la liste à surveiller
-            fds[i] = fds[nfds - 1];
-            nfds--;
+            fds[i].fd = -1;
           }
-          else if (len == 2)
-          {
-            // si le joueur est dans un jeu en solo , on attend de recevoir un ready request
-            int pos1 = -1;
-            int pos2 = -1;
-            debug_printf("len4p %d \n",len4p);
-            index_in_game(game_4p, len4p, fds[i].fd, &pos1, &pos2);
-            if (pos1 == -1 && pos2 == -1)
-            {
+          else if (len == 2) {
 
-              index_in_game(game_eq, lenEq, fds[i].fd, &pos1, &pos2);
-              if (pos1 != -1 || pos2 != -1)
-              {
-                int ready = recvRequestReady(message, game_eq[pos1]->mode);
-                debug_printf("je suis aprs ready dans Eq\n");
-                if (!ready)
-                {
-                  debug_printf("je suis dans not ready\n");
-                  sendTCP(fds[i].fd, "ERR", 3);
-                  close(fds[i].fd);
-                  game_eq[pos1]->plys[pos2] = game_eq[pos1]->plys[game_eq[pos1]->lenplys - 1];
-                  game_eq[pos1]->lenplys -= 1;
-                }
-                else
-                {
-                  game_eq[pos1]->nbrready++;
-
-                  if (game_eq[pos1]->nbrready == nbrply)
-                  {
-                    debug_printf("lancer le thread");
-                    pthread_t game;
-                    if (pthread_create(&game, NULL, server_game, game_eq[pos1]) < 0)
-                    {
-                      perror("pthread create problem in main_server");
-                      return 1;
-                    }
-                    game_eq[pos1] = game_eq[lenEq - 1];
-                    lenEq -= 1;
-                  }
-                }
-                fds[i] = fds[nfds - 1];
-                nfds--;
-                continue;
-              }
-            }else{
-              debug_printf("dans recvReady\n");
-              int ready = recvRequestReady(message, game_4p[pos1]->mode);
-              debug_printf("je suis aprs ready dans 4q\n");
-
-              if (!ready)
-              {
-                debug_printf("je suis aprs ready dans 4q\n");
-
-                //sendTCP(fds[i].fd, "ERR", 3);
-                debug_printf("ready not bon");
-                printf("socket lecture %d\n",fds[i].fd);
-                close(fds[i].fd);
-                game_4p[pos1]->plys[pos2] = game_4p[pos1]->plys[game_4p[pos1]->lenplys - 1];
-                game_4p[pos1]->lenplys -= 1;
+            if(pos1!=-1){
+              int ready=recvRequestReady(message,games[pos1]->mode);
+              if(!ready){
+                sendTCP(fds[i].fd,"ERR",3);
+                free_player(games[pos1]->plys[pos2]);
+                memmove(games[pos1]->plys+pos2,games[pos1]->plys+pos2+2,games[pos1]->lenplys-(pos2+1));
+                games[pos1]->lenplys-=1;
               }else{
-                game_4p[pos1]->nbrready++;
-                if (game_4p[pos1]->nbrready == nbrply)
-                {
+                games[pos1]->nbrready+=1;
+                if(games[pos1]->nbrready==nbrply){
                   pthread_t game;
-                  if (pthread_create(&game, NULL, server_game, game_4p[pos1]) < 0)
-                  {
-                    perror("pthread create problem in main_server");
+                  if(pthread_create(&game,NULL,server_game,games[pos1])!=0){
+                    perror("creation pthread error dans main_serveur");
                     return 1;
                   }
-                  game_4p[pos1] = game_4p[len4p - 1];
-                  len4p--;
+                  memmove(games+pos1,games+pos1+1,leng-(pos1+1));
+                  leng-=1;
                 }
-                
               }
-              fds[i] = fds[nfds - 1];
-              nfds--;
+              fds[i].fd=-1;
               continue;
             }
-
+                   
             uint16_t tmp = *((uint16_t *)message);
             tmp = ntohs(tmp);
             uint16_t CODEREQ = tmp >> 3;
+            // si l'inscription de message n'est pas conforme
             if (CODEREQ > 2 || CODEREQ <= 0)
             {
-              debug_printf("avanat integrer");
-              debug_printf("je suis dans integrer\n");
               sendTCP(fds[i].fd, "ERR", 3);
+              close(fds[i].fd);
+              fds[i].fd=-1;
+            }else{
+              Player *p = createplayer(fds[i].fd, CODEREQ);
+              // inscrire le joueur dans un jeu selon son mode
+              integrerPartie(games,p,CODEREQ,freq,&leng);
+
             }
-            Player *p = createplayer(fds[i].fd, CODEREQ);
-            // inscrire le joueur dans un jeu selon son mode
-            if (p->mode == 1)
-            {
-              if ((r = integrerPartie(game_4p, p, CODEREQ, freq, &len4p)) == 2)
-                return 2;
-            }
-            else if (p->mode == 2)
-            {
-              if ((r = integrerPartie(game_eq, p, CODEREQ, freq, &lenEq)) == 2)
-                return 2;
-            }
+            
+          
           }
         }
       }
     }
+    compacttabfds(fds,&nfds);
   }
 
   return 0;

@@ -322,7 +322,7 @@ void* receive_chat_message(void *arg){
             uint16_t codereq = 0, id = 0,eq = 0;
             extract_codereq_id_eq(msg->codereq_id_eq,&codereq,&id,&eq,RTCP);
             if(codereq > 14){
-                char buf[20];
+                char buf[25];
                     //mode solo
 
                 if(codereq==15)

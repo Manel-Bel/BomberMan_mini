@@ -55,8 +55,7 @@ void *server_game(void *args)
   memset(&timer2_val, 0, sizeof(timer2_val));
   int timerfb = timerfd_create(CLOCK_MONOTONIC, 0);
   debug_printf("timerfd : %d \n", timerfb);
-  if (timerfb == -1)
-  {
+  if (timerfb == -1){
     perror("probleme de create fd timer\n");
     return NULL;
   }
@@ -81,8 +80,7 @@ void *server_game(void *args)
 
   debug_printf("initier les chose de poll");
 
-  for (int i = 3; i < g->lenplys + 3; i++)
-  {
+  for (int i = 3; i < g->lenplys + 3; i++){
     // printf("i-3 %d\n",i-3);
     fds[i].fd = g->plys[(i - 3)]->sockcom;
     // printf("plyer %d\n",g->plys[i-3]->sockcom);
@@ -101,16 +99,13 @@ void *server_game(void *args)
 
   numc++;
 
-  while (1)
-  {
-    if (nbrplys == 0)
-    {
+  while (1){
+    if (nbrplys == 0){
       break;
     }
     poll(fds, nfds, -1);
 
-    for (size_t i = 0; i < nfds; i++)
-    {
+    for (size_t i = 0; i < nfds; i++){
       // printf(" avant if de fd %d \n",fds[i].fd);
       if (fds[i].fd != -1){
         if(fds[i].revents&POLLIN){
@@ -141,6 +136,7 @@ void *server_game(void *args)
             memset(bufTCHAT, 0, sizeof(bufTCHAT));
             int equipe = 0;
             int r = readTchat(bufTCHAT, fds[i].fd, &equipe);
+            //pourquoi close la socket non 
             if (r <= 0){
               fds[i].fd = -1;
               nbrplys--;
@@ -217,66 +213,31 @@ int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab)
   return 0;
 }
 
-void index_in_game(Game **g, int size, int sock, int *pos1, int *pos2)
-{
+int index_in_game(Game **g, int size, int sock, int *pos1, int *pos2){
   // les 32 premiers bit est la position dans le tableau game et les suivants sont la position dans tableau g->plys
-  for (int i = 0; i < size; i++)
-  {
-    for (int j = 0; j < g[i]->lenplys; j++)
-    {
-      if (g[i]->plys[j]->sockcom == sock)
-      {
+  for(int i = 0; i < size; i++){
+
+    for(int j = 0; j < g[i]->lenplys; j++){
+
+      if (g[i]->plys[j]->sockcom == sock){
         *pos1 = i;
         *pos2 = j;
-        break;
+        return 1;
       }
     }
   }
+  return -1;
 }
 
 /* thread principal qui accepte que les demandes de connexion*/
 int main_serveur(int freq){
 
-  /* pas communication entre les parties donc possibilité d'utiliser processus que processus leger*/
-  struct sockaddr_in6 address_sock;
-  address_sock.sin6_family = AF_INET6;
-  address_sock.sin6_port = htons(PORT_PRINCIPAL);
-  address_sock.sin6_addr = in6addr_any;
+  /* pas communication entre les parties donc possibilité d'utiliser un processus que processus leger*/
 
-  int sock = socket(PF_INET6, SOCK_STREAM, 0);
-  if (sock < 0)
-  {
-    perror("creation de socket");
-    return 1;
-  }
+  int sock = init_cnx_tcp();
+  if(sock == -1)
+    return -1;
 
-  int optval = 0;
-  int r = setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &optval, sizeof(optval));
-
-  if (r < 0)
-  {
-    perror("impossible utiliser le port");
-    close(sock);
-    return 1;
-  }
-  optval = 1;
-  r = setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval));
-
-  if (r < 0)
-    perror("reutilisation de port impossible");
-
-  r = bind(sock, (struct sockaddr *)&address_sock, sizeof(address_sock));
-  if (r < 0)
-  {
-    perror("bind problem");
-  }
-
-  r = listen(sock, 0);
-  if (r < 0)
-  {
-    perror("listen in main_serveur");
-    return 1;
-  }
 
   // preparer pour la surveillance des descripteurs
   struct pollfd fds[1024];
@@ -290,24 +251,19 @@ int main_serveur(int freq){
   int leng = 0;
  
 
-  while (1)
-  {
+  while(1){
 
     r = poll(fds, nfds, -1);
-    if (r < 0)
-    {
+    if (r < 0){
       perror("erreur de poll dans main_serveur");
       return 1;
     }
 
-    for (size_t i = 0; i < nfds; i++)
-    {
+    for (size_t i = 0; i < nfds; i++){
 
       // Si une socket est pret à lecture
-      if (fds[i].revents == POLLIN)
-      {
-        if (fds[i].fd == sock)
-        {
+      if (fds[i].revents == POLLIN){
+        if (fds[i].fd == sock){
 
           /* attente de la connexion */
           struct sockaddr_in6 addrclient;
@@ -318,19 +274,18 @@ int main_serveur(int freq){
 
           char addr[INET6_ADDRSTRLEN];
           inet_ntop(AF_INET6, &addrclient.sin6_addr, addr, INET6_ADDRSTRLEN);
-          if (sockclient < 0)
-          {
+
+          if (sockclient < 0){
             debug_printf("ECHEC: connexion de %s\n", addr);
             continue;
           }
-          else
-          {
-            debug_printf("OK :connexion de %s\n", addr);
-          }
+
+          debug_printf("OK :connexion de %s\n", addr);
 
           fds[nfds].fd = sockclient;
           fds[nfds].events = POLLIN;
           nfds += 1;
+        
         }
         else if (fds[i].fd != -1 ){
           uint8_t message[2];
@@ -411,10 +366,8 @@ int main_serveur(int freq){
   return 0;
 }
 
-int main(int argc, char **argv)
-{
-  if (argc >= 2)
-  {
+int main(int argc, char **argv){
+  if (argc >= 2){
     int v = main_serveur(atoi(argv[1]));
     return v;
   }

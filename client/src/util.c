@@ -106,7 +106,6 @@ void refresh_game_line(Line* l, uint8_t h, uint8_t w){
 void refresh_game(Board* b, Line* l) {
     
     refresh_grid(b);
-    
     for (int x = 0; x < b->w+2; x++) {
         mvaddch(0, x, '-');
         mvaddch(b->h+1, x, '-');

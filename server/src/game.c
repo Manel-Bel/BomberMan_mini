@@ -197,21 +197,6 @@ void putPlayersOnBoard(Game *g)
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void free_game(Game *g)
 {
   for (int j = 0; j < g->lenplys; j++)
@@ -518,10 +503,3 @@ void handling_Action_Request(Game *g)
     g->plys[id]->annuleraction = 1;
   }
 }
-
-
-
-
- 
-
- 

@@ -35,22 +35,22 @@
 
 #define H 20
 #define W 20
-#define nbrply 2
+#define nbrply 4
 #define TEXTSIZE 255
 #define TIMES 1
 
 typedef enum {
-    EMPTY = (uint8_t)0,
-    INDESTRUCTIBLE_WALL = (uint8_t)1,
-    DESTRUCTIBLE_WALL = (uint8_t)2,
-    BOMB = (uint8_t)3,
-    EXPLOSION = (uint8_t)4,
-    PLAYER_START = (uint8_t)5,
-    PLAYER_END = (uint8_t)9 //player0=5,player1=6,player2=7,player3=8
+    EMPTY,
+    INDESTRUCTIBLE_WALL,
+    DESTRUCTIBLE_WALL,
+    BOMB,
+    EXPLOSION,
+    PLAYER_START,
+    PLAYER_END,
 } CellType;
 
 
-typedef enum ACTION { NONE, UP, DOWN, LEFT, RIGHT, QUIT, PLACE_BOMB } ACTION;
+typedef enum ACTION {UP, DOWN, LEFT, RIGHT, PLACE_BOMB, DER, NONE} ACTION;
 
 
 typedef struct Game Game;
@@ -63,7 +63,9 @@ struct Bomber{
   int pos[2]; // x:pos[0] et y :pos[1]
   time_t start_time; // Bomb start time
   int coundown;
-};typedef struct Bomber Bomber;
+};
+
+typedef struct Bomber Bomber;
 
 
 #endif

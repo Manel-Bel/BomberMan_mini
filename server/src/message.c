@@ -7,6 +7,44 @@ char usedIPv6[1024][40] = {0};
 int nbr = 0;
 int nbr2 = 0;
 
+
+
+int init_cnx_tcp(){
+  int sock;
+  struct sockaddr_in6 address_sock;
+  address_sock.sin6_family = AF_INET6;
+  address_sock.sin6_port = htons(PORT_PRINCIPAL);
+  address_sock.sin6_addr = in6addr_any;
+
+  if ((sock = socket(PF_INET6, SOCK_STREAM, 0)) < 0){
+    perror("creation de socket tcp");
+    return -1;
+  }
+
+  int optval = 0;
+
+  if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &optval, sizeof(optval)) < 0){
+    perror(" setsockopt : impossible utiliser le port");
+    close(sock);
+    return -1;
+  }
+
+  optval = 1;
+  if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0)
+    perror("reutilisation de port impossible");
+
+ if (bind(sock, (struct sockaddr *)&address_sock, sizeof(address_sock)) < 0){
+    perror("bind problem");
+    return -1;
+  }
+
+  if(listen(sock, 0) < 0){
+    perror("listen in main_serveur");
+    return -1;
+  }
+  return sock;
+}
+
 // Return the index of the free slot in usedPort, and 0 otherwise.
 int researchPort(int port)
 {
@@ -372,40 +410,38 @@ int sendfreqBoard(Game *g, int n){
 
 
 
-int readTchat(uint8_t *buf, int sock, int *equipe)
-{
+int readTchat(uint8_t *buf, int sock, int *equipe){
 
-  debug_printf("start to read tchat message\n");
+  debug_printf("start to read tchat message");
   int total = 0;
 
-  if ((total = recvTCP(sock, buf, 3)) <= 0)
-  {
+  if ((total = recvTCP(sock, buf, 3)) <= 0){
     return total;
   }
+
   debug_printf("recv taille recu %d \n ", total);
   uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buf);
-  uint16_t codereq = ntohs((*CODEREQ_ID_REQ) >> 3);
-  uint8_t id_eq = ntohs(*CODEREQ_ID_REQ) & 0x7;
-  debug_printf("CODEREQ : %d\n", ntohs(*CODEREQ_ID_REQ) >> 3);
-  if (codereq == 8)
-  {
-    
+  uint16_t tmp = ntohs((*CODEREQ_ID_REQ));
+  uint16_t codereq = tmp >> 3;
+  uint8_t id_eq = tmp & 0x7;
+  debug_printf("readTchat CODEREQ : %d\n", codereq);
+
+  if (codereq == 8){
     *equipe = 1;
     *CODEREQ_ID_REQ = htons(14 << 3 | id_eq);
-
-  }else{
+    debug_printf("codereq equipe");
+  }
+  else{
     *CODEREQ_ID_REQ = htons(13 << 3 | id_eq);
   }
-
   
-
   uint8_t len = *(buf + 2);
   debug_printf("len recu %d\n", len);
 
-  if ((total += (recvTCP(sock, (buf + 3), len))) <= 0)
-  {
+  //pourquoi : 0 --> client closed donc renvoyer -1 ?
+  if((total += (recvTCP(sock, (buf + 3), len))) <= 0)
     return 1;
-  }
+  
 
   return total;
 }

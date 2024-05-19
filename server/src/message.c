@@ -192,6 +192,20 @@ int r_ecvRequestReady(int sock, char mode)
   return 0;
 }
 
+//traiter ready request 
+int recvRequestReady(uint8_t *buff,char mode){
+  debug_printf("dans revRequest\n");
+  uint16_t h = ntohs(*((uint16_t *) buff));
+  printf("buff recu %d \n",h);
+  uint16_t codeReq = (h >> 3);
+  debug_printf("%d \n",codeReq);
+  printf("recu %d dans recvRequestReady\n", codeReq);
+  if (codeReq == mode + 2)
+  {
+    return 1;
+  }
+  return 0;
+}
 
 /* fonction pour envoyer une messages en TCP*/
 
@@ -417,10 +431,10 @@ int readTchat(uint8_t *buf, int sock, int *equipe){
     *CODEREQ_ID_REQ = htons(14 << 3 | id_eq);
     debug_printf("codereq equipe");
   }
-  else
+  else{
     *CODEREQ_ID_REQ = htons(13 << 3 | id_eq);
+  }
   
-
   uint8_t len = *(buf + 2);
   debug_printf("len recu %d\n", len);
 

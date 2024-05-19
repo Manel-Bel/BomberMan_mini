@@ -158,6 +158,60 @@ void *server_game(void *args)
         }        
       }
     }
+    //check if there is a winner at the end of while
+    if (nbrplys == 1) {
+        uint16_t endMessage;
+        endMessage = (15 << 3); //set CODEREQ's first 12 bits
+        int idWinner = -1;
+        for (int i = 0; i < g->lenplys; i++) {
+            if (g->plys[i]->stat == 0) {
+                idWinner = g->plys[i]->id;
+                break;
+            }
+        }
+        endMessage |= (idWinner << 2); //set CODEREQ's 13th bit
+        endMessage |= 0; // Set bits 14 and 15 of EQ to 0, as EQ is ignored in solo mode
+
+        //turn to network byte order
+        endMessage = htons(endMessage);
+
+        //send end game message to all players
+        for (int i = 0; i < g->lenplys; i++) {
+            sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
+        }
+
+        break;
+    }
+    else if (nbrplys == 2 && g->mode == 2) {
+        int idsurv = -1;
+        for (int i = 0; i < g->lenplys; i++) {
+            if (idsurv != -1 && g->plys[i]->stat == 0) {
+                if (idsurv != g->plys[i]->idEq) {
+                    break;
+                }
+            }
+
+            if (idsurv == -1 && g->plys[i]->stat == 0) {
+                idsurv = g->plys[i]->idEq;
+            }
+        }
+
+        uint16_t endMessage;
+        endMessage = (16 << 3); //set CODEREQ's first 12 bits
+        endMessage |= 0 << 2; // Set bits 14 and 15 of EQ to 0, as EQ is ignored in equipe mode
+        endMessage |= idsurv; //set CODEREQ's 13th bit
+
+        //turn to network byte order
+        endMessage = htons(endMessage);
+
+        //send end game message to all players
+        for (int i = 0; i < g->lenplys; i++) {
+            sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
+        }
+
+        break;
+    }
+
   }
 
 end:

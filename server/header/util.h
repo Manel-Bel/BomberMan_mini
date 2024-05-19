@@ -40,13 +40,13 @@
 #define TIMES 1
 
 typedef enum {
-    EMPTY,
-    INDESTRUCTIBLE_WALL,
-    DESTRUCTIBLE_WALL,
-    BOMB,
-    EXPLOSION,
-    PLAYER_START,
-    PLAYER_END,
+    EMPTY=0,
+    INDESTRUCTIBLE_WALL=1,
+    DESTRUCTIBLE_WALL=2,
+    BOMB=3,
+    EXPLOSION=4,
+    PLAYER_START=5,
+    PLAYER_END=9,//player0=5, player1=6, player2=7, player3=8
 } CellType;
 
 

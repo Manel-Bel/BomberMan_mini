@@ -14,6 +14,8 @@ Player * createplayer(int sock,int mode){
   p->sockcom=sock;
   p->moveaction.num=-1;
   p->moveaction.action=-1;
+  p->idEq=0;
+  p->stat=0;
 
   return p;
 

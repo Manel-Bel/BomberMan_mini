@@ -509,10 +509,8 @@ void handling_Action_Request(Game *g)
     debug_printf("le joueur est mort dans handling action request\n");
     return;
   }
-  if (action.action >= 0 && action.action <= 3)
-  {
-    if (action.num > g->plys[id]->moveaction.num)
-    {
+  if (action.action >= 0 && action.action <= 3){
+    if (action.num > g->plys[id]->moveaction.num || (action.num==0 && g->plys[id]->moveaction.num==8191) ){
       g->plys[id]->moveaction = action;
     }
   }

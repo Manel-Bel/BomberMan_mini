@@ -143,7 +143,8 @@ int sendPlayerInfo(Player *p, int mode, struct in6_addr add, int port_udp, int p
   An_In an;
   memcpy(&an.ADDRDIFF, &add, sizeof(add));
   printf("coreq envoyé est %d\n", mode + 8);
-  
+  printf("pid %d\n",p->id);
+  printf("p->idEq\n");
   an.entete = ((mode + 8) << 3) | (p->id << 1) | (p->idEq);
   printf("an.entete %d en LE \n", an.entete);
   an.entete=htons(an.entete);

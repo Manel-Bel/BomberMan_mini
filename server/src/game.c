@@ -486,7 +486,9 @@ void handling_Action_Request(Game *g)
   action.num = (ACTIONLIGNE) >> 3;
   action.action = (ACTIONLIGNE) & 0x7;
   debug_printf("action recu , action est %d et son num %d\n", action.action, action.num);
-
+  if(g->plys[id]->stat==DEAD){
+    return;
+  }
   if (action.action >= 0 && action.action <= 3)
   {
     if (action.num > g->plys[id]->moveaction.num)

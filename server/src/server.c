@@ -158,8 +158,14 @@ void *server_game(void *args)
         }        
       }
     }
+    int nbVivant = 0;
+    for (int i = 0; i < g->lenplys; i++){
+      if (g->plys[i]->stat == 0){
+        nbVivant++;
+      }
+    }
     //check if there is a winner at the end of while
-    if (nbrplys == 1) {
+    if (nbVivant == 1) {
         uint16_t endMessage;
         endMessage = (15 << 3); //set CODEREQ's first 12 bits
         int idWinner = -1;
@@ -182,7 +188,7 @@ void *server_game(void *args)
 
         break;
     }
-    else if (nbrplys == 2 && g->mode == 2) {
+    else if (nbVivant == 2 && g->mode == 2) {
         int idsurv = -1;
         for (int i = 0; i < g->lenplys; i++) {
             if (idsurv != -1 && g->plys[i]->stat == 0) {

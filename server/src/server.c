@@ -188,7 +188,7 @@ void *server_game(void *args)
         for (int i = 0; i < g->lenplys; i++) {
             sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
         }
-        sleep(3);//wait for 3 seconds before closing sockets
+        sleep(5);//wait for 5 seconds before closing sockets
         break;
     }
     else if (g->mode == 2) {
@@ -228,7 +228,7 @@ void *server_game(void *args)
             debug_printf("send end game message to player %d\n",g->plys[i]->id);
             sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
         }
-        sleep(3);//wait for 3 seconds before closing sockets
+        sleep(5);//wait for 5 seconds before closing sockets
         break;
     }
 

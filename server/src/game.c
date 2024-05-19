@@ -81,12 +81,13 @@ void process_cell(Game *g, int x, int y) {
             case PLAYER_START ... PLAYER_END:
                 // Remove the player from the game
                 player_index = (int)(*cell - (PLAYER_START));
-              g->plys[player_index]->stat = DEAD;
+                g->plys[player_index]->stat = DEAD;
                 g->plys[player_index]->pos[0] = -1;
                 g->plys[player_index]->pos[1] = -1;
                 debug_printf("player killed dans case p:%d\n", player_index);
                 //shutdown
-                // shutdown(g->plys[player_index]->sockcom, SHUT_RD);
+                debug_printf("shutdown p:%d\n", player_index);
+                shutdown(g->plys[player_index]->sockcom, SHUT_RD);
                 *cell = EXPLOSION;
                 break;
             case EXPLOSION:
@@ -105,7 +106,8 @@ void process_cell(Game *g, int x, int y) {
                         g->plys[i]->pos[1] = -1;
                         debug_printf("player killed:%d\n", i);
                         //shutdown
-                        // shutdown(g->plys[i]->sockcom, SHUT_RD);
+                        debug_printf("shutdown p:%d\n", i);
+                        shutdown(g->plys[i]->sockcom, SHUT_RD);
                         break;
                     }
                 }

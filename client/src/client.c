@@ -322,18 +322,22 @@ void* receive_chat_message(void *arg){
             uint16_t codereq = 0, id = 0,eq = 0;
             extract_codereq_id_eq(msg->codereq_id_eq,&codereq,&id,&eq,RTCP);
             if(codereq > 14){
+                char buf[20];
                     //mode solo
-                    if(codereq==15){
-                        printf("winning player %d",id);
-                    }else if(codereq==16){
-                        printf("winning team %d", id_eq);
-                    }else{
-                        printf("unknown codereq %d", codereq);
-                    }
-                    change_val_game_running();
-                    break;
-            }
 
+                if(codereq==15)
+                    snprintf(buf, sizeof(buf), "winning player %d", id);
+                else if(codereq==16)
+                        snprintf(buf, sizeof(buf), "winning team %d", eq);
+                else{
+                    debug_printf("%s unknown codereq %d",RTCP);
+                    break;
+                }
+                strcpy(thread->line->last_msg1, buf);
+                refresh_game_line(thread->line,thread->board->h, thread->board->w);
+                change_val_game_running();
+                break;
+            }
             r = read_tcp(thread->socket, &(msg->len),1);
             if(r < 1){
                 debug_printf("%s maybe closed server, second read",RTCP);

@@ -7,19 +7,17 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/types.h> 
 #include "debug.h"
 
-#define ADDR_GAME "::1"
-#define ADDR_GAME_ "fdc7:9dd5:2c66:be86:4849:43ff:fe49:79bf"
-#define PORT_PRINCIPAL 2024
-#define PORT_PRINCIPAL_CHAR "2024"
 
 typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT,TCHAT, NONE} ACTION;
 
 #define TEXT_SIZE 255
-#define MAX_PLAYERS 4
+#define MAX_MSG 8191
+
 
 typedef struct Board {
     uint8_t h;
@@ -55,17 +53,39 @@ void refresh_game(Board* b, Line* l);
 
 ACTION control(Line* l);
 
-void print_grille(Board * b) ;
+void print_grille(Board * b);
 
+/*!
+ * \fn void clear_line_msg(Line *l)
+ * \brief Clear the contents of a Line structure.
+ * 
+ * This function resets the cursor position to 0, clears the data buffer by setting all its bytes to 0,
+ * and sets the `for_team` field to 0.
+ * \param l Pointer to the Line structure to be cleared.
+ */
 void clear_line_msg(Line *l);
 
 int open_new_ter(const char *name);
 
 void init_interface();
 
-uint16_t *extract_codereq_id_eq(uint16_t entete);
+/*!
+ * \fn void extract_codereq_id_eq(uint16_t entete, uint16_t *codereq, uint16_t *id, uint16_t *eq, const char *func)
+ * \brief extracts the code request, ID, and EQ values from a combined header value assumed to be in `LE`.
+ * The combined header value is assumed to be packed according to specific bit positions:
+ * - The code request occupies the 5 most significant bits.
+ * - The ID occupies bits 2 and 1.
+ * - The EQ value occupies the least significant bit.
+ * The extracted values are stored in the provided pointers..
+ * \param entete The combined header value from which to extract the values.
+ * \param codereq Pointer to a uint16_t variable where the code request value will be stored.
+ * \param id Pointer to a uint16_t variable where the ID value will be stored.
+ * \param eq Pointer to a uint16_t variable where the EQ value will be stored.
+ * \param func The name of the calling function, used for debugging messages.
+ */
+void extract_codereq_id_eq(uint16_t entete, uint16_t *codereq, uint16_t *id, uint16_t *eq, const char *func);
 
 
-void init_codereq_id_eq(uint16_t codereq, uint16_t id, uint16_t eq);
+void init_codereq_id_eq(uint16_t *result, uint16_t codereq, uint16_t id, uint16_t eq);
 
 #endif

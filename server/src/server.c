@@ -122,7 +122,7 @@ void *server_game(void *args)
           }else if (fds[i].fd == timerfb){
             uint64_t expirations;
             read(timerfb, &expirations, sizeof(expirations));
-            printf("freq Timer expired %" PRIu64 " times\n", expirations);
+            // printf("freq Timer expired %" PRIu64 " times\n", expirations);
             if(sendfreqBoard(g, numf) < 0){
               goto end;
             }

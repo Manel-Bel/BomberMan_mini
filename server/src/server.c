@@ -117,7 +117,7 @@ void *server_game(void *args)
               goto end;
             }
             debug_printf("send completboard");
-            print_grille(&g->board);
+            //print_grille(&g->board);
             numc++;
           }else if (fds[i].fd == timerfb){
             uint64_t expirations;
@@ -147,7 +147,7 @@ void *server_game(void *args)
                 if (g->mode != 2) continue;
               }
               for (int j = 0; j < g->lenplys; j++){
-                if (g->plys[j]->idEq == ids){
+                if (g->plys[j]->idEq == ids || !equipe){
                   if (sendTCP(g->plys[j]->sockcom, bufTCHAT, r) < 0){
                     debug_printf("je suis dans sendtchat\n");
                   }

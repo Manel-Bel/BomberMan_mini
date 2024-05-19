@@ -395,7 +395,7 @@ int sendfreqBoard(Game *g, int n){
   memcpy(g->lastmultiboard, g->board.grid, g->board.h * g->board.w);
 
   debug_printf("send freq\n");
-  print_tab((char *)buff, nb * 3);
+  //print_tab((char *)buff, nb * 3);
 
   int r = sendto(g->sock_mdiff, buffsend, 5 + (nb * 3), 0, (struct sockaddr *)&g->addr_mdiff, sizeof(g->addr_mdiff));
   if (r == (5 + (nb * 3)))
@@ -413,31 +413,31 @@ int sendfreqBoard(Game *g, int n){
 
 int readTchat(uint8_t *buf, int sock, int *equipe){
 
-  debug_printf("start to read tchat message");
+  printf("start to read tchat message\n");
   int total = 0;
 
   if ((total = recvTCP(sock, buf, 3)) <= 0){
     return total;
   }
 
-  debug_printf("recv taille recu %d \n ", total);
+  printf("recv taille recu %d \n ", total);
   uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buf);
   uint16_t tmp = ntohs((*CODEREQ_ID_REQ));
   uint16_t codereq = tmp >> 3;
   uint8_t id_eq = tmp & 0x7;
-  debug_printf("readTchat CODEREQ : %d\n", codereq);
+  printf("readTchat CODEREQ : %d\n", codereq);
 
   if (codereq == 8){
     *equipe = 1;
     *CODEREQ_ID_REQ = htons(14 << 3 | id_eq);
-    debug_printf("codereq equipe");
+    printf("codereq equipe");
   }
   else{
     *CODEREQ_ID_REQ = htons(13 << 3 | id_eq);
   }
   
   uint8_t len = *(buf + 2);
-  debug_printf("len recu %d\n", len);
+  printf("len recu %d\n", len);
 
   //pourquoi : 0 --> client closed donc renvoyer -1 ?
   if((total += (recvTCP(sock, (buf + 3), len))) <= 0)

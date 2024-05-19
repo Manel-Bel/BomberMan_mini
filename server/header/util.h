@@ -35,7 +35,7 @@
 
 #define H 20
 #define W 20
-#define nbrply 4
+#define nbrply 2
 #define TEXTSIZE 255
 #define TIMES 1
 

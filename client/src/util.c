@@ -45,22 +45,22 @@ void refresh_grid(Board* b){
             char c;
             uint8_t value = get_grid(b,x,y);
             if (value >= 5) {
-                c = (char)( value - (uint8_t)5 + (uint8_t)'0'); // Display player ID
+                c = (char)( value - (uint8_t)5 + '0'); // Display player ID
             } else {
                 switch (value) {
-                    case (uint8_t)0:
+                    case 0:
                         c = '.'; // Empty space
                         break;
-                    case (uint8_t)1:
+                    case 1:
                         c = '#'; // Indestructible wall
                         break;
-                    case (uint8_t)2:
+                    case 2:
                         c = '*'; // Destructible wall
                         break;
-                    case (uint8_t)3:
+                    case 3:
                         c = 'B'; // Bomb
                         break;
-                    case (uint8_t)4:
+                    case 4:
                         c = 'E'; // Exploded by bomb
                         break;
                     default:
@@ -177,12 +177,27 @@ void clear_line_msg(Line *l){
 }
 
 
-uint16_t *extract_codereq_id_eq(uint16_t entete){
+void extract_codereq_id_eq(uint16_t entete, uint16_t *codereq, uint16_t *id, uint16_t *eq, const char *func){
+
+    *codereq = entete >> 3;
+    *id = (entete >> 1) & 0x3;
+    *eq = entete & 0x1;
+    debug_printf("%s CODEREQ: %u ID: %u EQ: %u",func, *codereq, *id, *eq); // Extrait le CODEREQ id EQ
 
 }
 
-void init_codereq_id_eq(uint16_t codereq, uint16_t id, uint16_t eq){
-
+/*!
+ * \fn void init_codereq_id_eq(uint16_t *result, uint16_t codereq, uint16_t id, uint16_t eq)
+ * \brief This function initializes a 16-bit result by combining the code request, ID, and EQ values.
+ * The code request is shifted left by 3 bits, the ID is shifted left by 1 bit, and the EQ is placed in the least significant bit.
+ * The resulting value is stored in network byte order using htons().
+ * \param result Pointer to a uint16_t variable where the result will be stored.
+ * \param codereq The code request value.
+ * \param id The ID value.
+ * \param eq The EQ value.
+ */
+void init_codereq_id_eq(uint16_t *result, uint16_t codereq, uint16_t id, uint16_t eq){
+    *result = htons(codereq << 3 | (id << 1) | eq);
 }
 
 void init_interface(){

@@ -307,7 +307,7 @@ int main_serveur(int freq){
 
   while(1){
 
-    r = poll(fds, nfds, -1);
+    int r = poll(fds, nfds, -1);
     if (r < 0){
       perror("erreur de poll dans main_serveur");
       return 1;

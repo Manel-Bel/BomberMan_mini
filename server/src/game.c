@@ -57,6 +57,7 @@ void explode_bomb(Game *g, int x, int y) {
     process_cell(g, x + 1, y - 1);
     process_cell(g, x - 1, y + 1);
     process_cell(g, x + 1, y + 1);
+    
 }
 
 void process_cell(Game *g, int x, int y) {
@@ -85,7 +86,7 @@ void process_cell(Game *g, int x, int y) {
                 g->plys[player_index]->pos[1] = -1;
                 debug_printf("player killed dans case p:%d\n", player_index);
                 //shutdown
-                shutdown(g->plys[player_index]->sockcom, SHUT_RD);
+                // shutdown(g->plys[player_index]->sockcom, SHUT_RD);
                 *cell = EXPLOSION;
                 break;
             case EXPLOSION:
@@ -104,7 +105,7 @@ void process_cell(Game *g, int x, int y) {
                         g->plys[i]->pos[1] = -1;
                         debug_printf("player killed:%d\n", i);
                         //shutdown
-                        shutdown(g->plys[i]->sockcom, SHUT_RD);
+                        // shutdown(g->plys[i]->sockcom, SHUT_RD);
                         break;
                     }
                 }
@@ -522,4 +523,13 @@ void handling_Action_Request(Game *g)
   {
     g->plys[id]->annuleraction = 1;
   }
+}
+
+
+void clean_explosion(Game *g){
+  for (int i = 0; i < g->board.h * g->board.w; i++) {
+        if (g->board.grid[i] == EXPLOSION) {
+            g->board.grid[i] = EMPTY;
+        }
+    }
 }

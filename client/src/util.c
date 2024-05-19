@@ -71,6 +71,17 @@ void refresh_grid(Board* b){
             mvaddch(y+1,x+1,c);
         }
     }
+    // //turn 'E' into empty space after a short delay
+    // usleep(100000);
+
+    // for (y = 0; y < b->h; y++) {
+    //     for (x = 0; x < b->w; x++) {
+    //         if (get_grid(b, x, y) == (uint8_t)4) {
+    //             set_grid(b, x, y, 0);
+    //             mvaddch(y + 1, x + 1, '.');
+    //         }
+    //     }
+    // }
 }
 
 void refresh_game_line(Line* l, uint8_t h, uint8_t w){

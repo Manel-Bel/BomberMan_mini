@@ -122,11 +122,11 @@ void *server_game(void *args)
           }else if (fds[i].fd == timerfb){
             uint64_t expirations;
             read(timerfb, &expirations, sizeof(expirations));
-            printf("freq Timer expired %" PRIu64 " times\n", expirations);
+            // printf("freq Timer expired %" PRIu64 " times\n", expirations);
             if(sendfreqBoard(g, numf) < 0){
               goto end;
             }
-            debug_printf("send freq");
+            // debug_printf("send freq");
             update_bombs(g);
             numf++;
           }else if(fds[i].fd == g->sock_udp){

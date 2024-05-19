@@ -277,6 +277,8 @@ int send_chat_message(const void *args){
     if(total == 0)
         je_suis_elimine = 1;
 
+    clear_line_msg(thread->line);
+
     return total;
 }
 
@@ -286,6 +288,7 @@ void* receive_chat_message(void *arg){
     // ssize_t total = 0;
     ssize_t r;
     ChatMessage *msg = malloc(sizeof(ChatMessage));
+    uint8_t buf[TEXT_SIZE + 3];
 
     struct pollfd fds[1];
     fds[0].fd = thread->socket;
@@ -306,7 +309,7 @@ void* receive_chat_message(void *arg){
             continue;
 
         if(((fds[0].revents & POLLIN))){
-            r = read_tcp(thread->socket, msg,3);
+            r = read_tcp(thread->socket, msg,2);
             if(r < 1){
                 debug_printf("%s maybe closed server, first read",RTCP);
                 change_val_game_running();
@@ -314,6 +317,7 @@ void* receive_chat_message(void *arg){
             }
             debug_printf("%s: nrmlm 3: %d",RTCP,r);
             msg->codereq_id_eq = ntohs(msg->codereq_id_eq);
+            
 
             uint16_t codereq = 0, id = 0,eq = 0;
             extract_codereq_id_eq(msg->codereq_id_eq,&codereq,&id,&eq,RTCP);
@@ -322,8 +326,17 @@ void* receive_chat_message(void *arg){
                 change_val_game_running();
                 break;
             }
+
+            r = read_tcp(thread->socket, &(msg->len),1);
+            if(r < 1){
+                debug_printf("%s maybe closed server, second read",RTCP);
+                change_val_game_running();
+                break;
+            }
             
             debug_printf("%s msg len %u",RTCP, msg->len);
+            if(msg->len == 0)
+                continue;
             
             r = read_tcp(thread->socket,&(msg->data), msg->len);
             if(r < 1) {
@@ -551,7 +564,6 @@ ACTION input_thread(void* arg){
         case '\n': 
             debug_printf("%s contenu de line %s",INPUT, thread->line->data);
             if(strlen(thread->line->data) > 0){
-                clear_line_msg(thread->line);
                 r = TCHAT;
             }
             break;

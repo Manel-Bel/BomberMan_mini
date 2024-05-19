@@ -424,7 +424,7 @@ int readTchat(uint8_t *buf, int sock, int *equipe){
   uint16_t tmp = ntohs((*CODEREQ_ID_REQ));
   uint16_t codereq = tmp >> 3;
   uint8_t id_eq = tmp & 0x7;
-  debug_printf("readTchat CODEREQ : %d\n", codereq);
+  printf("readTchat CODEREQ : %d\n", codereq);
 
   if (codereq == 8){
     *equipe = 1;

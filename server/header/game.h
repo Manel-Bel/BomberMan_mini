@@ -35,9 +35,8 @@ void update_bombs(Game *g);
 void explode_bomb(Game *g, int x, int y);
 void plant_bomb(Game *g, int x, int y);
 int initgame(Game *g,char mode,int h,int w);
-void free_games(Game **games, int len);
 void free_game(Game *g);
 void free_player(Player *p);
-void initplayer(Player *p, int id, int idEq);
+void process_cell(Game *g, int x, int y);
 
 #endif

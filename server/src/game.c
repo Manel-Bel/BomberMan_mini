@@ -126,21 +126,6 @@ void update_bombs(Game *g) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 void free_game(Game *g)
 {
   for (int j = 0; j < g->lenplys; j++)

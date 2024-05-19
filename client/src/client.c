@@ -367,10 +367,11 @@ int send_chat_message(const void *args){
     ChatMessage msg;
     memset(&msg,0,sizeof(ChatMessage));
     uint16_t codereq = thread->line->for_team ? 8 : 7 ;// 8 pour la team 
+    debug_printf("%s id et equipe %u",STCP, (thread->player_data->entete & 0x7));
 
     msg.codereq_id_eq = htons((codereq << 3) | (thread->player_data->entete & 0x7));
 
-    debug_printf("%s msg codereq %d",STCP,msg.codereq_id_eq);
+    debug_printf("%s msg codereq %d",STCP,((codereq << 3) | (thread->player_data->entete & 0x7)));
      
     msg.len = strlen(thread->line->data);
     memcpy(msg.data,thread->line->data,msg.len);
@@ -438,6 +439,8 @@ void* receive_chat_message(void *arg){
                     debug_printf("%s maybe closed server, second read",RTCP);
                     break;
                 }
+
+                debug_printf("%s avant de test msg2", RTCP);
                 thread->line->id_last_msg2 = thread->line->id_last_msg1;
                 strcpy(thread->line->last_msg2, thread->line->last_msg1);
 
@@ -452,7 +455,9 @@ void* receive_chat_message(void *arg){
                 debug_printf("%s LEN: %u DATA: %s",RTCP, msg->len, msg->data); // Extrait EQ
             
                 // refresh_game(thread->board, thread->line);
+                debug_printf("refresh game de rtcp");
                 refresh_game_line(thread->line,thread->board->h, thread->board->w);
+                debug_printf("apres refresh game de rtcp");
             }
     }
 
@@ -606,7 +611,7 @@ ACTION input_thread(void* arg){
         prev_c = c;
     }
     switch(prev_c) {
-        case '#':
+        case '$':
             r = BOMB;
             break;
 
@@ -626,7 +631,7 @@ ACTION input_thread(void* arg){
             r = RIGHT;
             break;
 
-        // case KEY_DC :
+        case KEY_DC :
         case KEY_BACKSPACE :
             debug_printf("%s touche pour supprimer",INPUT);
             if(thread->line->cursor > 0){
@@ -642,8 +647,13 @@ ACTION input_thread(void* arg){
             break;
 
         case '@':
-            debug_printf("%s message pour equipe");
-            thread->line->for_team = 1;
+            debug_printf("%s message pour equipe",INPUT);
+            if(thread->line == NULL){
+                debug_printf("thread-line null");
+            }
+            else{
+                thread->line->for_team = 1;
+            }
             break;
         case '&' :
             debug_printf("%s annuler la derniere action",INPUT);
@@ -651,7 +661,7 @@ ACTION input_thread(void* arg){
             break;
 
         case '\n': 
-            debug_printf("%s contenu de line%s",INPUT, thread->line->data);
+            debug_printf("%s contenu de line %s",INPUT, thread->line->data);
             if(strlen(thread->line->data) > 0)
                 r = TCHAT;
             break;

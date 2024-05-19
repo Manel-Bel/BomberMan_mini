@@ -44,6 +44,9 @@ struct Answer_Action
 };
 typedef struct Answer_Action An_Ac;
 
+
+int init_cnx_tcp();
+
 int genePort(); // generer un port de numero comprise entre 1024 et 49151
 void generateAdrMultidiff(struct in6_addr *addr);
 // generer une ipv6 pour multicast 
@@ -60,8 +63,7 @@ void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff);
 int recvTCP(int sock, void *buf, int size);
 /* retourne la taille de data send sinon un nombre <=0 */
 int sendTCP(int sock, void *buf, int size);
-/*verifier si le joueur est bien pret , retourne 1 si il est pret sinon 0*/
-int recvRequestReady(uint8_t *buff,char mode);
+
 /* envoie les informations sur les addresse multicast et port , si reussi retourne 0 sinon 1*/
 int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
 /* retroune la taille total recu, en cas d'echec retourne un nombre <=0*/

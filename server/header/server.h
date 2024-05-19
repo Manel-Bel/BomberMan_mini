@@ -10,8 +10,7 @@
 
 
 
-struct Arguments
-{
+struct Arguments{
   int *socks;
   int *nbr;
   pthread_mutex_t *vtab;
@@ -36,13 +35,13 @@ typedef struct Argsurveillants argsurv;
 
 
 
-int estGagne(Game *g);
 int serverUdp(int sock, int port);
 int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul);
-void action_perform(uint8_t *board, int action, Player *p,Game *g);
-int nbrDiff(uint8_t *board, char *board1);
-void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff);
-void handling_Action_Request(Game *g);
+
+/*verifier si le joueur est bien pret , retourne 1 si il est pret sinon 0*/
+int recvRequestReady(uint8_t *buff,char mode);
+int index_in_game(Game **g, int size, int sock, int *pos1, int *pos2);
+
 
 
 

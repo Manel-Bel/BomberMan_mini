@@ -4,8 +4,10 @@
 #include <time.h>
 #include <sys/types.h>
 #include <stdint.h>
+#include "board.h"
 
 
 void init_grille(uint8_t *grille);
 void print_grille_1D(uint8_t *grille);
+void print_grille(Board * b);
 #endif

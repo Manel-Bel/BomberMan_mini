@@ -14,11 +14,11 @@ void init_grille(uint8_t *grille) {
 
     // Set up the outer walls
     for (int i = 0; i < W; i++) {
-        grille[0*W+i] = (uint8_t)1; // Top boundary
+        grille[i] = (uint8_t)1; // Top boundary
         grille[(H-1)*W+i] = (uint8_t)1; // Bottom boundary
     }
     for (int i = 0; i < H; i++) {
-        grille[i*W+0] = (uint8_t)1; // Left boundary
+        grille[i*W] = (uint8_t)1; // Left boundary
         grille[i*W+(W-1)] = (uint8_t)1; // Right boundary
     }
 
@@ -68,12 +68,37 @@ void print_grille_1D(uint8_t *grille){
     printf("imprimer grille \n");
     for (int i = 0; i < H; i++) {
         for (int j = 0; j < W; j++) {
-            //printf("numero case à imprimer %d\n",H*i+j);
-            printf("%u ",grille[W*i+j]);
+            printf("numero case à imprimer %d\n",W*i+j);
+            printf("%u ",grille[i*W+j]);
         }
         printf("\n");
     }
 
+}
+
+uint8_t get_grid(Board* b, int x, int y){
+    return b->grid[y*b->w + x];
+}
+
+void print_grille(Board * b){
+    int x,y;
+    for (y = 0; y < b->h; y++) {
+        for (x = 0; x < b->w; x++){
+		int m = get_grid(b,x,y);
+            switch (m) {
+                case 0:
+                   fprintf(stderr,"%d ",m);
+                   break;
+                case 1:
+                   fprintf(stderr,"%d ",m);
+                    break;
+                default:
+                   fprintf(stderr,"%d ",m);
+                    break;
+            }
+        }
+       fprintf(stderr,"\n");
+    }
 }
 
 /*int main5555() {

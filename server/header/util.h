@@ -46,7 +46,7 @@ typedef enum {
     BOMB,
     EXPLOSION,
     PLAYER_START,
-    PLAYER_END,
+    PLAYER_END=9,//player0=5, player1=6, player2=7, player3=8
 } CellType;
 
 

@@ -31,6 +31,7 @@ struct Game{
   int num_bombs;  // Number of active bombs
 };
 
+void clean_explosion(Game *g);
 void update_bombs(Game *g);
 void explode_bomb(Game *g, int x, int y);
 void plant_bomb(Game *g, int x, int y);

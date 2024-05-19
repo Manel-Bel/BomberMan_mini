@@ -14,8 +14,7 @@ void plant_bomb(Game *g, int x, int y) {
 }
 
 void explode_bomb(Game *g, int x, int y) {
-    // Update the game board to mark the bomb location as an explosion
-    g->board.grid[y * g->board.w + x] = EXPLOSION;
+
     //int blast_radius = 2; 
     // // Remove destructible walls, players, and mark explosions in the blast radius
     // for (int k = 0; k <= blast_radius; k++) {
@@ -30,7 +29,8 @@ void explode_bomb(Game *g, int x, int y) {
     //         process_cell(g, nx, ny);
     //     }
     // }
-  
+    //self
+    process_cell(g, x, y);
     //UP
     if (g->board.grid[(y+1) * g->board.w + x] != INDESTRUCTIBLE_WALL && g->board.grid[(y+1) * g->board.w + x] != DESTRUCTIBLE_WALL) {
         process_cell(g, x, y + 2);
@@ -80,18 +80,34 @@ void process_cell(Game *g, int x, int y) {
             case PLAYER_START ... PLAYER_END:
                 // Remove the player from the game
                 player_index = (int)(*cell - (PLAYER_START));
-                debug_printf("player:%d\n", player_index);
-                g->plys[player_index]->stat = DEAD;
-                debug_printf("player killed:%d\n", player_index);
+              g->plys[player_index]->stat = DEAD;
+                g->plys[player_index]->pos[0] = -1;
+                g->plys[player_index]->pos[1] = -1;
+                debug_printf("player killed dans case p:%d\n", player_index);
+                //shutdown
+                shutdown(g->plys[player_index]->sockcom, SHUT_RD);
                 *cell = EXPLOSION;
                 break;
             case EXPLOSION:
                 debug_printf("explosion\n");
-                // Continue the explosion chain reaction
+                //become empty
+                *cell = EMPTY;
                 break;
             case BOMB:
                 debug_printf("bomb\n");
                 *cell = EXPLOSION;
+                //if there used to be a player in the cell
+                for(int i = 0; i < g->lenplys; i++){
+                    if(g->plys[i]->pos[0] == x && g->plys[i]->pos[1] == y){
+                        g->plys[i]->stat = DEAD;
+                        g->plys[i]->pos[0] = -1;
+                        g->plys[i]->pos[1] = -1;
+                        debug_printf("player killed:%d\n", i);
+                        //shutdown
+                        shutdown(g->plys[i]->sockcom, SHUT_RD);
+                        break;
+                    }
+                }
                 // Explode the bomb recursively
                 //if it is not the first explosion, to avoid infinite explosions:
                 if (g->tabbommber[g->num_bombs - 1].pos[0] != x && g->tabbommber[g->num_bombs - 1].pos[1] != y)
@@ -414,12 +430,15 @@ void action_perform(uint8_t *board, int action, Player *p, Game *game)
 
   if (!board[(y2)*W + x2])
   {
-    
-    board[y * W + x] = 0;
-    board[y2 * W + x2] = numcaseply;
-    p->pos[0] = x2;
-    p->pos[1] = y2;
-    
+    if (action <= 3)
+    {
+      debug_printf("action realisé %d\n", action);
+      if(board[y * W + x] != 3)
+        board[y * W + x] = 0;
+      board[y2 * W + x2] = numcaseply;
+      p->pos[0] = x2;
+      p->pos[1] = y2;
+    }
   }
 }
 
@@ -487,6 +506,7 @@ void handling_Action_Request(Game *g)
   action.action = (ACTIONLIGNE) & 0x7;
   debug_printf("action recu , action est %d et son num %d\n", action.action, action.num);
   if(g->plys[id]->stat==DEAD){
+    debug_printf("le joueur est mort dans handling action request\n");
     return;
   }
   if (action.action >= 0 && action.action <= 3)

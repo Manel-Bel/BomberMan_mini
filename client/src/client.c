@@ -585,7 +585,7 @@ void *receive_game_data_thread(void *args){
                 }
 
             }
-            print_grille(thread->board);
+            //print_grille(thread->board);
             refresh_grid(thread->board);
             refresh();
         }

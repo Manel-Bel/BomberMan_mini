@@ -126,6 +126,7 @@ void *server_game(void *args)
             if(sendfreqBoard(g, numf) < 0){
               goto end;
             }
+            clean_explosion(g);
             debug_printf("send freq");
             update_bombs(g);
             numf++;
@@ -166,7 +167,7 @@ void *server_game(void *args)
     }
     debug_printf("nbVivant %d\n",nbVivant);
     //check if there is a winner at the end of while
-    if (nbVivant == 1) {
+    if (nbVivant == 1 && g->mode == 1) {
         debug_printf("end game en mode solo");
         uint16_t endMessage;
         endMessage = (15 << 3); //set CODEREQ's first 12 bits
@@ -190,21 +191,30 @@ void *server_game(void *args)
         sleep(3);//wait for 3 seconds before closing sockets
         break;
     }
-    else if (nbVivant == 2 && g->mode == 2) {
+    else if (g->mode == 2) {
         debug_printf("end game: dans equipe");
         int idsurv = -1;
-        for (int i = 0; i < g->lenplys; i++) {
-            if (idsurv != -1 && g->plys[i]->stat == 0) {
-                if (idsurv != g->plys[i]->idEq) {
+        int allInSameTeam = 1;
+        for (int i = 0; i < g->lenplys; i++)
+        {
+            if (g->plys[i]->stat == 0)
+            {
+                if (idsurv == -1)
+                {
+                    idsurv = g->plys[i]->idEq;
+                }
+                else if (idsurv != g->plys[i]->idEq)
+                {
+                    allInSameTeam = 0;
                     break;
                 }
             }
-
-            if (idsurv == -1 && g->plys[i]->stat == 0) {
-                idsurv = g->plys[i]->idEq;
-            }
         }
-
+        debug_printf("allInSameTeam? %d\n",allInSameTeam);
+        if(allInSameTeam==0){
+          continue;
+        }
+        debug_printf("allInSameTeam %d\n",allInSameTeam);
         uint16_t endMessage;
         endMessage = (16 << 3); //set CODEREQ's first 12 bits
         endMessage |= 0 << 2; // Set bits 14 and 15 of EQ to 0, as EQ is ignored in equipe mode
@@ -215,6 +225,7 @@ void *server_game(void *args)
 
         //send end game message to all players
         for (int i = 0; i < g->lenplys; i++) {
+            debug_printf("send end game message to player %d\n",g->plys[i]->id);
             sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
         }
         sleep(3);//wait for 3 seconds before closing sockets

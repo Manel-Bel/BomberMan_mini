@@ -214,7 +214,7 @@ int main(int argc, char *argv[]){
         pthread_join(threads[i],NULL);
     }
 
-    
+
     end: 
         debug_printf("%s end of main game loop", MAIN);
         curs_set(1); // Set the cursor to visible again
@@ -424,9 +424,17 @@ void* receive_chat_message(void *arg){
                 msg->codereq_id_eq = ntohs(msg->codereq_id_eq);
                 uint16_t codereq = msg->codereq_id_eq >> 3;
                 int id = (msg->codereq_id_eq >> 1) & 0x3;
+                int id_eq = msg->codereq_id_eq & 0x1;
                 debug_printf("%s codereq %u",RTCP,codereq);
                 if(codereq > 14){
-                    //TODO: handle the winner id 
+                    //mode solo
+                    if(codereq==15){
+                        printf("winning player %d",id);
+                    }else if(codereq==16){
+                        printf("winning team %d", id_eq);
+                    }else{
+                        printf("unknown codereq %d", codereq);
+                    }
                     change_val_game_running();
                     break;
                 }

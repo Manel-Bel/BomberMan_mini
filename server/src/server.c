@@ -1,4 +1,5 @@
 #include "../header/server.h"
+#include <signal.h>
 
 
 
@@ -186,7 +187,7 @@ void *server_game(void *args){
         //send end game message to all players
         for (int i = 0; i < g->lenplys; i++) {
             debug_printf("send end game message to player %d\n",g->plys[i]->id);
-            sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
+            sendTCP(g->plys[i]->sockcom, &endMessage, sizeof(endMessage));
         }
         printf("start sleeping for 5 seconds\n");
         sleep(5);//wait for 5 seconds before closing sockets
@@ -227,7 +228,7 @@ void *server_game(void *args){
         //send end game message to all players
         for (int i = 0; i < g->lenplys; i++) {
             debug_printf("send end game message to player %d\n",g->plys[i]->id);
-            sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
+            sendTCP(g->plys[i]->sockcom,&endMessage, sizeof(endMessage));
         }
         debug_printf("start sleeping for 5 seconds\n");
         sleep(5);//wait for 5 seconds before closing socketsf
@@ -250,6 +251,12 @@ end:
 
 /* thread principal qui accepte que les demandes de connexion*/
 int main_serveur(int freq){
+  
+  /* on ignore les signal SIGKILL et SIGPIPE */
+  struct sigaction sa;
+  memset(&sa,0,sizeof(struct sigaction));
+  sa.sa_handler = SIG_IGN;
+  sigaction(SIGPIPE, &sa, NULL);
 
   /* pas communication entre les parties donc possibilité d'utiliser un processus que processus leger*/
 

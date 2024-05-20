@@ -85,6 +85,7 @@ void refresh_grid(Board* b){
     }
     refresh();
     pthread_mutex_unlock(&ncurses_mutex_grid);
+
 }
 
 void refresh_game_line(Line* l, uint8_t h, uint8_t w){
@@ -118,20 +119,86 @@ void refresh_game_line(Line* l, uint8_t h, uint8_t w){
 
 }
 
-// void refresh_game(Board* b, Line* l) {
-//     refresh_grid(b);
-//     pthread_mutex_lock(&ncurses_mutex);
-//     for (int x = 0; x < b->w+2; x++) {
-//         mvaddch(0, x, '-');
-//         mvaddch(b->h+1, x, '-');
-//     }
-//     for (int y = 0; y < b->h+2; y++) {
-//         mvaddch(y, 0, '|');
-//         mvaddch(y, b->w+1, '|');
-//     }
-//     pthread_mutex_unlock(&ncurses_mutex);
-//     refresh_game_line(l, b->h,b->w);
-// }
+void refresh_game(Board* b, Line* l) {
+    // refresh_grid(b);
+    pthread_mutex_lock(&ncurses_mutex);
+    for (int x = 0; x < b->w+2; x++) {
+        mvaddch(0, x, '-');
+        mvaddch(b->h+1, x, '-');
+    }
+    for (int y = 0; y < b->h+2; y++) {
+        mvaddch(y, 0, '|');
+        mvaddch(y, b->w+1, '|');
+    }
+    int x,y;
+    for (y = 0; y < b->h; y++) {
+        for (x = 0; x < b->w; x++) {
+            char c;
+            uint8_t value = get_grid(b,x,y);
+            if (value >= 5) {
+                c = (char)( value - (uint8_t)5 + '0'); // Display player ID
+            } else {
+                switch (value) {
+                    case 0:
+                        c = '.'; // Empty space
+                        break;
+                    case 1:
+                        c = '#'; // Indestructible wall
+                        break;
+                    case 2:
+                        c = '*'; // Destructible wall
+                        break;
+                    case 3:
+                        c = 'B'; // Bomb
+                        break;
+                    case 4:
+                        c = 'E'; // Exploded by bomb
+                        break;
+                    default:
+                        c = '?'; // Unknown character
+                        break;
+                }
+            }
+            mvaddch(y+1,x+1,c);
+        }
+    }
+    for (int x = 0; x < b->w+2; x++) {
+        mvaddch(0, x, '-');
+        mvaddch(b->h+1, x, '-');
+    }
+    for (int y = 0; y < b->h+2; y++) {
+        mvaddch(y, 0, '|');
+        mvaddch(y, b->w+1, '|');
+    }
+
+    // Draw chat area
+    for (int y = b->h+2; y < b->h+5; y++) {
+        for (int x = 0; x < b->w+2; x++) {
+            mvaddch(y, x, ' ');
+        }
+    }
+
+    // Draw last two messages
+    if(l->id_last_msg2 > 0){
+        attron(COLOR_PAIR(l->id_last_msg2)); // Enable custom color 2
+        mvaddstr(b->h+2, 1, l->last_msg2); // Print last message 1
+        attroff(COLOR_PAIR(l->id_last_msg2));
+    }
+    if(l->id_last_msg1 > 0){
+        attron(COLOR_PAIR(l->id_last_msg1)); // Enable custom color 3
+        mvaddstr(b->h+3, 1, l->last_msg1); // Print last message 2
+        attroff(COLOR_PAIR(l->id_last_msg1));
+    }
+    // Update chat text
+    attron(COLOR_PAIR(5)); // Enable custom color 1
+    attron(A_BOLD); // Enable bold
+    mvaddstr(b->h+4, 1, l->data); // Print user input
+    attroff(A_BOLD); // Disable bold
+    attroff(COLOR_PAIR(5)); // Disable custom color 1
+
+    refresh(); // Apply the changes to the terminal
+    pthread_mutex_unlock(&ncurses_mutex);
+}
 
 
 int open_new_ter(const char *name){

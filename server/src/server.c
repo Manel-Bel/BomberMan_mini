@@ -177,7 +177,7 @@ void *server_game(void *args){
                 break;
             }
         }
-        endMessage |= (idWinner << 2); //set CODEREQ's 13th bit
+        endMessage |= (idWinner << 1); //set CODEREQ's 13th bit
         endMessage |= 0; // Set bits 14 and 15 of EQ to 0, as EQ is ignored in solo mode
         debug_printf("idWinner %d\n",idWinner);
         //turn to network byte order

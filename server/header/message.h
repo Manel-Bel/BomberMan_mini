@@ -63,7 +63,6 @@ void sendTCPtoALL(struct pollfd *fds,nfds_t nfds, void *buf, int sizebuff);
 int recvTCP(int sock, void *buf, int size);
 /* retourne la taille de data send sinon un nombre <=0 */
 int sendTCP(int sock, void *buf, int size);
-
 /* envoie les informations sur les addresse multicast et port , si reussi retourne 0 sinon 1*/
 int sendPlayerInfo(Player *p,int mode,struct in6_addr add,int port_udp,int port_mdiff);
 /* retroune la taille total recu, en cas d'echec retourne un nombre <=0*/

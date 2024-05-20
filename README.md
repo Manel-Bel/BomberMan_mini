@@ -41,6 +41,8 @@ II. Run client
 
 # How to Play 
 
-To move a player, use the touch up, down, right, and left. 
-To plant a bomb, use the symbol $. 
-To quit the game when you are in the graphical interface, use ~.
+**To move a player**, use the touch up, down, right, and left.
+
+**To plant a bomb**, use the symbol $ . 
+
+**To quit** the game when you are in the graphical interface, use ~ .

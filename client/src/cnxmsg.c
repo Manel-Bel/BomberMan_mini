@@ -51,7 +51,6 @@ int get_server_address(int *socket_tcp, const char *server_add, struct sockaddr_
         return -1;
     }
 
-
     for(p = res; p != NULL; p = p->ai_next){
 
         if((*socket_tcp = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1){
@@ -59,12 +58,55 @@ int get_server_address(int *socket_tcp, const char *server_add, struct sockaddr_
             continue;
         }
 
-        if(connect(*socket_tcp,p->ai_addr, p->ai_addrlen) == -1){
-            perror("connect tcp");
+        int flags = fcntl(*socket_tcp, F_GETFL,0);
+        if(flags == -1 || fcntl(*socket_tcp, F_SETFL, flags | O_NONBLOCK) == -1){
+            perror("fcntl");
             close(*socket_tcp);
             continue;
         }
 
+        if(connect(*socket_tcp,p->ai_addr, p->ai_addrlen) == -1){
+            if(errno != EINPROGRESS){
+                perror("connect tcp");
+                close(*socket_tcp);
+                continue;
+            }
+        }
+
+        //on utilise poll pour attendre
+        struct pollfd pfd;
+        pfd.fd = *socket_tcp;
+        pfd.events = POLLOUT ;
+        int r = poll(&pfd, 1, TIMEOUT);
+        if(r == -1){
+            perror("poll");
+            close(*socket_tcp);
+            continue;
+        }
+        else if(r == 0){
+            debug_printf("timeout de cnx");
+            close(*socket_tcp);
+            continue;
+        }else{
+            int err = 0;
+            socklen_t errlen = sizeof(err);
+            if(getsockopt(*socket_tcp, SOL_SOCKET, SO_ERROR, &err, &errlen) == -1 || err != 0){
+                if(err != 0){
+                    errno = err;
+                    perror("connect tcp");
+                }else
+                    perror("getsockopt");
+                
+                close(*socket_tcp);
+                continue;
+            }
+        }
+        //remettre la socket en mode bloquant
+        if(fcntl(*socket_tcp, F_SETFL, flags) == -1){
+            perror("fcntl");
+            close(*socket_tcp);
+            continue;
+        }
         break;
     }
 

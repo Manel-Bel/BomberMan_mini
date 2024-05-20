@@ -4,12 +4,20 @@
 
 #include "util.h"
 
+/**
+ * @struct Action_Request
+ * @brief Represents an action request from a player.
+ */
 struct Action_Request{
-  int num;
+  int num; //action number
   int action; // -1: None,0 vers NORD , 1 vers EST , 2 vers SUD , 3 vers Ouest , 4 pour depot bombe ,5 pour annuler la derniere demande de deplacement
 
 };typedef struct Action_Request A_R;
 
+/**
+ * @struct Player
+ * @brief Represents a player in the game.
+ */
 struct Player{
     int id;  // id player
     int idEq; // id equipes si en mode equipes

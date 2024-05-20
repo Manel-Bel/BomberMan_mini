@@ -20,21 +20,31 @@ typedef struct Request Request;
 
 
 
+/**
+ * @struct answerBoard
+ * @brief Represents an answer containing the game board.
+ */
 struct answerBoard{
   uint16_t entete;
-  uint16_t num;
+  uint16_t num;/**< Header of the request */
   uint8_t hauteur;
   uint8_t largeur;
   char board[H*W];
 };
 typedef struct answerBoard An_Board;
 
-
+/**
+ * @struct Answer
+ * @brief Represents a generic answer with a header.
+ */
 struct Answer{
   int16_t entete;
 };typedef struct Answer Answer;
 
-
+/**
+ * @struct Answer_Integ
+ * @brief Represents an answer containing integration information.
+ */
 struct Answer_Integ{
   int16_t entete;
   int16_t PORTUDP;
@@ -43,6 +53,10 @@ struct Answer_Integ{
 };
 typedef struct Answer_Integ An_In;
 
+/**
+ * @struct Answer_Action
+ * @brief Represents an answer containing an action.
+ */
 struct Answer_Action
 {
   int16_t entete;
@@ -50,10 +64,25 @@ struct Answer_Action
 };
 typedef struct Answer_Action An_Ac;
 
-
+/**
+ * @brief Initializes a TCP connection.
+ * 
+ * @return The socket file descriptor, or -1 on error.
+ */
 int init_cnx_tcp();
 
-int genePort(); // generer un port de numero comprise entre 1024 et 49151
+/**
+ * @brief Generates a port number between 1024 and 49151.
+ * 
+ * @return The generated port number.
+ */
+int genePort();
+
+/**
+ * @brief Generates an IPv6 multicast address.
+ * 
+ * @param addr Pointer to the in6_addr structure to store the generated address.
+ */
 void generateAdrMultidiff(struct in6_addr *addr);
 // generer une ipv6 pour multicast 
 //comprise entre FF12:: et FF12:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF

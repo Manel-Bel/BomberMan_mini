@@ -25,7 +25,7 @@ struct Player{
 };
 
 
-
+/*create player*/
 Player * createplayer(int sock,int mode);
 /*free player*/
 void free_player(Player *p);

@@ -380,7 +380,7 @@ int sendfreqBoard(Game *g, int n){
   }
   uint16_t *entete = (uint16_t *)buffsend;
   *entete = htons(12 << 3);
-  printf("entete %d\n", *((uint16_t *)buffsend));
+  //printf("entete %d\n", *((uint16_t *)buffsend));
 
   uint16_t *num = (uint16_t *)(buffsend + 2);
   *num = htons(n);

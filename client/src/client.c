@@ -335,7 +335,9 @@ void* receive_chat_message(void *arg){
                     break;
                 }
                 strcpy(thread->line->last_msg1, buf);
-                refresh_game_line(thread->line,thread->board->h, thread->board->w);
+                // refresh_game_line(thread->line,thread->board->h, thread->board->w);
+                refresh_game(thread->board, thread->line);
+                
                 change_val_game_running();
                 break;
             }
@@ -369,8 +371,9 @@ void* receive_chat_message(void *arg){
 
             debug_printf("%s LEN: %u DATA: %s",RTCP, msg->len, msg->data); // Extrait EQ
         
-            // refresh_game(thread->board, thread->line);
-            refresh_game_line(thread->line,thread->board->h, thread->board->w);
+            refresh_game(thread->board, thread->line);
+            // refresh_game_line(thread->line,thread->board->h, thread->board->w);
+            
         }
     }
 
@@ -451,7 +454,8 @@ void *receive_game_data_thread(void *args){
             print_grille(thread->board);
             *thread->is_initialized = 1;
             debug_printf("%s CODEREQ_ID_EQ: %u NUM: %u",RGRID, codereq_id_eq, *thread->num_msg);
-            refresh_grid(thread->board);
+            // refresh_grid(thread->board);
+            refresh_game(thread->board, thread->line);
             
         }else{
             // read either freq or the whole grid
@@ -499,7 +503,8 @@ void *receive_game_data_thread(void *args){
 
             }
             //print_grille(thread->board);
-            refresh_grid(thread->board);
+            // refresh_grid(thread->board);
+            refresh_game(thread->board, thread->line);
         }
     }
     debug_printf("%s exiting",RGRID);
@@ -549,7 +554,8 @@ ACTION input_thread(void* arg){
             if(thread->line->cursor > 0){
                 thread->line->cursor--;
                 thread->line->data[thread->line->cursor] = '\0';
-                refresh_game_line(thread->line, thread->board->h,thread->board->w);
+                // refresh_game_line(thread->line, thread->board->h,thread->board->w);
+                refresh_game(thread->board, thread->line);
             }
             break;
 
@@ -582,7 +588,8 @@ ACTION input_thread(void* arg){
         default:
             if (prev_c >= ' ' && prev_c <= '~' && thread->line->cursor < TEXT_SIZE && thread->line->cursor < thread->board->w){
                 thread->line->data[(thread->line->cursor)++] = prev_c;
-                refresh_game_line(thread->line, thread->board->h,thread->board->w);
+                // refresh_game_line(thread->line, thread->board->h,thread->board->w);
+                refresh_game(thread->board, thread->line);
             }
             break;
     }

@@ -4,6 +4,7 @@ uint16_t game_running = 1;
 pthread_mutex_t mutex_game_running = PTHREAD_MUTEX_INITIALIZER;
 uint16_t je_suis_elimine = 0;
 
+
 #define MAIN  "\033[31m MAIN\033[m"
 #define RTCP  "\033[32m receive TCP\033[m"
 #define SACTION  "\033[33m send_action_udp\033[m"
@@ -452,7 +453,7 @@ void *receive_game_data_thread(void *args){
             }
             // copy the data of the grid
             memcpy(thread->board->grid, buf + offset, grid_len);
-            print_grille(thread->board);
+
             *thread->is_initialized = 1;
             debug_printf("%s CODEREQ_ID_EQ: %u NUM: %u",RGRID, codereq_id_eq, *thread->num_msg);
             // refresh_grid(thread->board);
@@ -494,8 +495,6 @@ void *receive_game_data_thread(void *args){
                 // we need to first extract the number of cells changed 
                 uint8_t nb = grid_buf[4];
 
-
-                // debug_printf("taille de nb diff recu %d \n",nb);
                 uint8_t offset = 5;
                 for(uint8_t i = 0; i < nb; i++){
                     set_grid(thread->board, grid_buf[offset + i + 1], grid_buf[offset + i], grid_buf[offset + i + 2]);
@@ -503,7 +502,6 @@ void *receive_game_data_thread(void *args){
                 }
 
             }
-            //print_grille(thread->board);
             // refresh_grid(thread->board);
             refresh_game(thread->board, thread->line);
         }
@@ -517,7 +515,6 @@ ACTION input_thread(void* arg){
     ThreadArgs *thread = (ThreadArgs *) arg;
     ACTION r = NONE;
     
-    // while(game_running){
     int c;
     int prev_c = ERR;
     // We consume all similar consecutive key presses
@@ -594,7 +591,6 @@ ACTION input_thread(void* arg){
             }
             break;
     }
-    // usleep(30*1000);      
     // debug_printf("input exiting\n");
     // pthread_exit(NULL);
     return r;

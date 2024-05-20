@@ -323,9 +323,8 @@ int readTchat(uint8_t *buf, int sock, int *equipe){
 
   int total = 0;
 
-  if ((total = recvTCP(sock, buf, 3)) <= 0){
+  if ((total = recvTCP(sock, buf, 3)) <= 0)
     return total;
-  }
 
   uint16_t *CODEREQ_ID_REQ = (uint16_t *)(buf);
   uint16_t tmp = ntohs((*CODEREQ_ID_REQ));
@@ -338,15 +337,15 @@ int readTchat(uint8_t *buf, int sock, int *equipe){
     *CODEREQ_ID_REQ = htons(14 << 3 | id_eq);
     //printf("codereq equipe");
   }
-  else{
+  else
     *CODEREQ_ID_REQ = htons(13 << 3 | id_eq);
-  }
+  
   
   uint8_t len = *(buf + 2);
-
-  if((total += (recvTCP(sock, (buf + 3), len))) <= 0)
+  int r;
+  if((r= (recvTCP(sock, (buf + 3), len))) <= 0)
     return 1;
-  
-
+    
+  total += r;
   return total;
 }

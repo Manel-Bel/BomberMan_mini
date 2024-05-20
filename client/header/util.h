@@ -20,7 +20,6 @@ typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT,TCHAT, NONE} ACTION
 #define MAX_MSG 8191
 
 
-
 typedef struct Board {
     uint8_t h;
     uint8_t w;

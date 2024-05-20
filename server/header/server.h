@@ -11,8 +11,9 @@
 
 
 
-
-
+void *server_game(void *args);
+int main_serveur(int freq);
+void compacttabfds(struct pollfd *fds,nfds_t *nfds);
 
 
 #endif

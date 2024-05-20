@@ -1,21 +1,13 @@
 #include "../header/server.h"
 
 
-
-
-void compacttabfds(struct pollfd *fds,nfds_t *nfds){
-  size_t offset=0;
-  for(size_t i=0;i<*nfds;i++){
-    if(fds[i].fd!=-1){
-      fds[offset]=fds[i];
-      offset++;
-    }
+int main(int argc, char **argv){
+  if (argc >= 2){
+    int v = main_serveur(atoi(argv[1]));
+    return v;
   }
-  *nfds=offset;
+  return 0;
 }
-
-
-
 
 
 void *server_game(void *args){
@@ -247,7 +239,6 @@ end:
 }
 
 
-
 /* thread principal qui accepte que les demandes de connexion*/
 int main_serveur(int freq){
 
@@ -316,8 +307,7 @@ int main_serveur(int freq){
           int pos2 = -1;
           index_in_game(games,leng,fds[i].fd,&pos1,&pos2);
 
-          if ((len = recvTCP(fds[i].fd, &message, 2)) <= 0)
-          {
+          if ((len = recvTCP(fds[i].fd, &message, 2)) <= 0){
             
             debug_printf("dans tcp 0\n");
             // si le joueur est dans un jeu en solo cela veut dire qu'il est deconnecter apres initialisation  , 
@@ -363,9 +353,8 @@ int main_serveur(int freq){
             tmp = ntohs(tmp);
             uint16_t CODEREQ = tmp >> 3;
             // si l'inscription de message n'est pas conforme
-            if (CODEREQ > 2 || CODEREQ <= 0)
-            {
-              sendTCP(fds[i].fd, "ERR", 3);
+            if (CODEREQ > 2 || CODEREQ <= 0){
+              // sendTCP(fds[i].fd, "ERR", 3);
               close(fds[i].fd);
               fds[i].fd=-1;
             }else{
@@ -384,10 +373,13 @@ int main_serveur(int freq){
   return 0;
 }
 
-int main(int argc, char **argv){
-  if (argc >= 2){
-    int v = main_serveur(atoi(argv[1]));
-    return v;
+void compacttabfds(struct pollfd *fds,nfds_t *nfds){
+  size_t offset=0;
+  for(size_t i=0;i<*nfds;i++){
+    if(fds[i].fd!=-1){
+      fds[offset]=fds[i];
+      offset++;
+    }
   }
-  return 0;
+  *nfds=offset;
 }

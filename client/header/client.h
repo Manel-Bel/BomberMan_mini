@@ -15,6 +15,7 @@
 
 // #define GRID_SIZE 400
 #define MAX_FDS 3
+#define DEBUG 0
 
 
 typedef struct {

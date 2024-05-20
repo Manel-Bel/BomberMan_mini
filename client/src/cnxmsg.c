@@ -201,11 +201,9 @@ int isInList(const char c, const char *list){
 }
 
 int read_input_char(char * rep, const char *allowedChars){
-    // TODO : with poll ?
     do{
         fflush(stdin);
         read(STDIN_FILENO, rep, 1);
-        // sscanf("%c", &rep);
     }while(!isInList(*rep, allowedChars));
     fflush(stdin);
 

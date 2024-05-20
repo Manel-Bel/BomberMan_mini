@@ -132,15 +132,12 @@ void update_bombs(Game *g) {
 
 
 
-void putPlayersOnBoard(Game *g)
-{
-  for (int i = 0; i < g->lenplys; i++)
-  {
+void putPlayersOnBoard(Game *g){
+  for (int i = 0; i < g->lenplys; i++){
     Player *player = g->plys[i];
 
     // Set initial positions based on player ID
-    switch (player->id)
-    {
+    switch (player->id){
     case 0:
       player->pos[0] = 0; // Top left corner
       player->pos[1] = 0;
@@ -171,12 +168,10 @@ void putPlayersOnBoard(Game *g)
 }
 
 
-void free_game(Game *g)
-{
+void free_game(Game *g){
   for (int j = 0; j < g->lenplys; j++)
-  {
     free_player(g->plys[j]);
-  }
+  
   free(g->board.grid);
   free(g->lastmultiboard);
 
@@ -187,12 +182,10 @@ void free_game(Game *g)
   return 0 si reussi , 1 sinon
 */
 
-int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul)
-{
+int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul){
 
   int ok = 1;
-  if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0)
-  {
+  if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0){
     perror("echec de SO_REUSSEADDR");
     close(sock);
     return 1;
@@ -220,8 +213,7 @@ int serverMultiCast(int sock, int port, struct sockaddr_in6 *adr_mul)
 
 /* permet de effectuer les etapes d'une serverudp , return 0 si reussi, 1 sinon*/
 
-int serverUdp(int sock, int port)
-{
+int serverUdp(int sock, int port){
 
   struct sockaddr_in6 udp_addr;
   memset(&udp_addr, 0, sizeof(udp_addr));
@@ -230,15 +222,13 @@ int serverUdp(int sock, int port)
   udp_addr.sin6_port = htons(port);
 
   int ok = 1;
-  if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0)
-  {
+  if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0){
     perror("echec de SO_REUSSEADDR");
     close(sock);
     return 1;
   }
 
-  if (bind(sock, (struct sockaddr *)&udp_addr, sizeof(udp_addr)) < 0)
-  {
+  if (bind(sock, (struct sockaddr *)&udp_addr, sizeof(udp_addr)) < 0){
     perror("probleme de bind");
     close(sock);
     return 1;
@@ -315,9 +305,8 @@ int initgame(Game *g, char mode, int h, int w){
   debug_printf("generer port apres\n");
   g->port_mdiff = port_mdiff;
 
-  r = serverMultiCast(g->sock_mdiff, g->port_mdiff, &g->addr_mdiff);
 
-  if (r){
+  if(serverMultiCast(g->sock_mdiff, g->port_mdiff, &g->addr_mdiff)){
     perror("erreur dans serverMultiCast");
     return 1;
   }
@@ -338,27 +327,27 @@ void action_perform(uint8_t *board, int action, Player *p, Game *game){
 
   switch (action){
   case 0:
-    if (y <= 0) return;
-
+    if (y <= 0) 
+      return;
     y2--;
 
     break;
   case 1:
-    if (x >= W - 1) return;
-
+    if (x >= W - 1) 
+      return;
     x2++;
-
     break;
 
   case 2:
     if (y >= H - 1) return;
     y2++;
-
     break;
+
   case 3:
     if (x <= 0) return;
     x2--;
     break;
+
   case 4:
     board[y * W + x] = 3; // la case contient une bombe
     plant_bomb(game, x, y);
@@ -370,6 +359,7 @@ void action_perform(uint8_t *board, int action, Player *p, Game *game){
       debug_printf("action realisé %d\n", action);
       if(board[y * W + x] != 3)
         board[y * W + x] = 0;
+
       board[y2 * W + x2] = numcaseply;
       p->pos[0] = x2;
       p->pos[1] = y2;
@@ -381,12 +371,9 @@ void action_perform(uint8_t *board, int action, Player *p, Game *game){
 
 int nbrDiff(uint8_t *board, char *board1){
   int comp = 0;
-  for (int i = 0; i < H * W; i++)
-  {
+  for (int i = 0; i < H * W; i++){
     if (board1[i] != board[i])
-    {
       comp++;
-    }
   }
   return comp;
 }
@@ -394,12 +381,9 @@ int nbrDiff(uint8_t *board, char *board1){
 
 void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff){
   int n = 0;
-  for (int i = 0; i < H; i++)
-  {
-    for (int j = 0; j < W; j++)
-    {
-      if (b[i * W + j] != bdiff[i * W + j])
-      {
+  for (int i = 0; i < H; i++){
+    for (int j = 0; j < W; j++){
+      if (b[i * W + j] != bdiff[i * W + j]){
         *(buff + (n * 3)) = i;
         *(buff + (n * 3) + 1) = j;
         *(buff + (n * 3) + 2) = b[i * W + j];
@@ -438,9 +422,8 @@ void handling_Action_Request(Game *g){
     return;
   }
   if (action.action >= UP && action.action <=RIGHT ){
-    if (action.num > g->plys[id]->moveaction.num || (action.num==0 && g->plys[id]->moveaction.num==8191) ){
+    if (action.num > g->plys[id]->moveaction.num || (action.num==0 && g->plys[id]->moveaction.num==8191) )
       g->plys[id]->moveaction = action;
-    }
   }
   else if (action.action == PLACE_BOMB){
     g->plys[id]->poseBombe = 1;
@@ -453,9 +436,8 @@ void handling_Action_Request(Game *g){
 
 void clean_explosion(Game *g){
   for (int i = 0; i < g->board.h * g->board.w; i++) {
-        if (g->board.grid[i] == EXPLOSION) {
+        if (g->board.grid[i] == EXPLOSION)
             g->board.grid[i] = EMPTY;
-        }
   }
 }
 
@@ -467,9 +449,8 @@ void clean_explosion(Game *g){
 int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab){
   int i;
   for (i = 0; i < *lentab; i++){
-    if (g[i]->lenplys < nbrply && g[i]->mode==mode){
+    if (g[i]->lenplys < nbrply && g[i]->mode==mode)
       break;
-    }
   }
   if (i == *lentab){
     g[i] = malloc(sizeof(Game));

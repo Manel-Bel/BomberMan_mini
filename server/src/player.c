@@ -4,9 +4,9 @@
 
 Player * createplayer(int sock,int mode){
   Player *p =malloc(sizeof(Player));
-  if(p==NULL){
-        perror("problem de malloc dans createplayer");
-        return p;
+  if(p == NULL){
+    perror("problem de malloc dans createplayer");
+    return p;
   }
  
   p->Ready = 0;
@@ -21,16 +21,9 @@ Player * createplayer(int sock,int mode){
 
 }
 
-void free_player(Player *p)
-{
-
+void free_player(Player *p){
   debug_printf("free player \n");
   close(p->sockcom);
   //pthread_mutex_destroy(p->lockstats);
   free(p);
 }
-
-
-
-
-

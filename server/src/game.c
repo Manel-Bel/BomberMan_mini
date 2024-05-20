@@ -10,7 +10,7 @@ void plant_bomb(Game *g, int x, int y) {
     Bomber b = {{x, y}, time(NULL), 3};  // Countdown set to 3 seconds
     g->tabbommber[g->num_bombs++] = b;
     g->board.grid[y * g->board.w + x] = BOMB;
-    print_grille_1D(g->board.grid);
+    //print_grille_1D(g->board.grid);
 }
 
 void explode_bomb(Game *g, int x, int y) {
@@ -86,6 +86,7 @@ void process_cell(Game *g, int x, int y) {
                 g->plys[player_index]->pos[1] = -1;
                 debug_printf("player killed dans case p:%d\n", player_index);
                 //shutdown
+                 shutdown(g->plys[player_index]->sockcom, SHUT_RD);
                 debug_printf("shutdown p:%d\n", player_index);
                 shutdown(g->plys[player_index]->sockcom, SHUT_RD);
                 *cell = EXPLOSION;
@@ -144,38 +145,7 @@ void update_bombs(Game *g) {
     }
 }
 
-int estGagne(Game *g)
-{
-  if (g->lenplys == 1)
-  {
-    return 1;
-  }
-  else
-  {
-    if (g->lenplys == 2 && g->mode == 2)
-    {
-      int idsurv = -1;
-      for (int i = 0; i < nbrply; i++)
-      {
 
-        if (idsurv != -1 && g->plys[i]->stat == 0)
-        {
-          if (idsurv != g->plys[i]->idEq)
-          {
-            return 0;
-          }
-        }
-
-        if (idsurv == -1 && g->plys[i]->stat == 0)
-        {
-          idsurv = g->plys[i]->idEq;
-        }
-      }
-      return 1;
-    }
-  }
-  return 0;
-}
 
 void putPlayersOnBoard(Game *g)
 {
@@ -460,8 +430,8 @@ int nbrDiff(uint8_t *board, char *board1)
   return comp;
 }
 
-void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff)
-{
+
+void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff){
   int n = 0;
   for (int i = 0; i < H; i++)
   {
@@ -493,12 +463,8 @@ void handling_Action_Request(Game *g)
   }
 
   uint16_t CODEREQ = *((uint16_t *)buf);
-  // printf("CODEREQ EN BE %d \n",CODEREQ);
-
-  // printf("%d\n",buf[2]);
-  // printf("%d\n",buf[3]);
+  
   uint16_t ACTIONLIGNE = *((uint16_t *)(buf + 2));
-  // printf("ACTIONLIGNE EN BG : %d \n",ACTIONLIGNE);
   CODEREQ = ntohs(CODEREQ);
   ACTIONLIGNE = ntohs(ACTIONLIGNE);
 
@@ -534,4 +500,65 @@ void clean_explosion(Game *g){
             g->board.grid[i] = EMPTY;
         }
     }
+}
+
+
+// retourne 0 si joueur est integrer dans une partie
+// 1 si une partie est lancé et joueur est integrer dans une nouvelle partie
+// 2 sinon
+
+int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab)
+{
+  int i;
+  for (i = 0; i < *lentab; i++)
+  {
+    if (g[i]->lenplys < nbrply && g[i]->mode==mode)
+    {
+      break;
+    }
+  }
+  if (i == *lentab){
+    g[i] = malloc(sizeof(Game));
+    if (g[i] == NULL)
+    {
+      perror("malloc in integerOrlancerPartie");
+      return 2;
+    }
+    initgame(g[i], mode, H, W);
+    *lentab += 1;
+    g[i]->freq = freq;
+  }
+
+  // add player in game and send port and initinfo to player
+  g[i]->plys[g[i]->lenplys] = p;
+  
+  p->id=g[i]->lenplys;
+  if(mode==2){
+    if(p->id<(nbrply/2)){
+      p->idEq=0;
+    }else{
+      p->idEq=1;
+    }
+  }
+  sendPlayerInfo(p, mode, g[i]->addr_mdiff.sin6_addr, g[i]->port_udp, g[i]->port_mdiff);
+  debug_printf("fin de player \n");
+  g[i]->lenplys++;
+
+  return 0;
+}
+
+int index_in_game(Game **g, int size, int sock, int *pos1, int *pos2){
+  //po1 pour la position dans le table de games  et pos2 la position du joueur dans la table dans tableau g->plys
+  for(int i = 0; i < size; i++){
+
+    for(int j = 0; j < g[i]->lenplys; j++){
+
+      if (g[i]->plys[j]->sockcom == sock){
+        *pos1 = i;
+        *pos2 = j;
+        return 1;
+      }
+    }
+  }
+  return -1;
 }

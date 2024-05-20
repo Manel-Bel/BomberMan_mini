@@ -18,8 +18,7 @@ void compacttabfds(struct pollfd *fds,nfds_t *nfds){
 
 
 
-void *server_game(void *args)
-{
+void *server_game(void *args){
 
   debug_printf("le server_game est lancé");
 
@@ -112,7 +111,7 @@ void *server_game(void *args)
           if (fds[i].fd == timercb){
             uint64_t expirations;
             read(timercb, &expirations, sizeof(expirations));
-            printf("complete Timer expired %" PRIu64 " times\n", expirations);
+            //printf("complete Timer expired %" PRIu64 " times\n", expirations);
             if (sendCompleteBoard(g, numc) < 0){
               goto end;
             }
@@ -243,65 +242,7 @@ end:
   return NULL;
 }
 
-// retourne 0 si joueur est integrer dans une partie
-// 1 si une partie est lancé et joueur est integrer dans une nouvelle partie
-// 2 sinon
 
-int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab)
-{
-  int i;
-  for (i = 0; i < *lentab; i++)
-  {
-    if (g[i]->lenplys < nbrply && g[i]->mode==mode)
-    {
-      break;
-    }
-  }
-  if (i == *lentab){
-    g[i] = malloc(sizeof(Game));
-    if (g[i] == NULL)
-    {
-      perror("malloc in integerOrlancerPartie");
-      return 2;
-    }
-    initgame(g[i], mode, H, W);
-    *lentab += 1;
-    g[i]->freq = freq;
-  }
-
-  // add player in game and send port and initinfo to player
-  g[i]->plys[g[i]->lenplys] = p;
-  
-  p->id=g[i]->lenplys;
-  if(mode==2){
-    if(p->id<(nbrply/2)){
-      p->idEq=0;
-    }else{
-      p->idEq=1;
-    }
-  }
-  sendPlayerInfo(p, mode, g[i]->addr_mdiff.sin6_addr, g[i]->port_udp, g[i]->port_mdiff);
-  debug_printf("fin de player \n");
-  g[i]->lenplys++;
-
-  return 0;
-}
-
-int index_in_game(Game **g, int size, int sock, int *pos1, int *pos2){
-  // les 32 premiers bit est la position dans le tableau game et les suivants sont la position dans tableau g->plys
-  for(int i = 0; i < size; i++){
-
-    for(int j = 0; j < g[i]->lenplys; j++){
-
-      if (g[i]->plys[j]->sockcom == sock){
-        *pos1 = i;
-        *pos2 = j;
-        return 1;
-      }
-    }
-  }
-  return -1;
-}
 
 /* thread principal qui accepte que les demandes de connexion*/
 int main_serveur(int freq){
@@ -386,8 +327,7 @@ int main_serveur(int freq){
             }
             // on l'enleve de la liste à surveiller
             fds[i].fd = -1;
-          }
-          else if (len == 2) {
+          }else if (len == 2) {
 
             if(pos1!=-1){
               int ready=recvRequestReady(message,games[pos1]->mode);
@@ -403,6 +343,9 @@ int main_serveur(int freq){
                   if(pthread_create(&game,NULL,server_game,games[pos1])!=0){
                     perror("creation pthread error dans main_serveur");
                     return 1;
+                  }
+                  if(pthread_detach(game)!=0){
+                    perror("detach problem");
                   }
                   memmove(games+pos1,games+pos1+1,leng-(pos1+1));
                   leng-=1;

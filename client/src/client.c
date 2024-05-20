@@ -27,7 +27,7 @@ int main(int argc, char *argv[]){
     if(argc == 3)
         redirection = argv[2];
     else  //else redirect to tmp file
-        redirection = "/tmp/output.txt";
+        redirection = "./output.txt";
 
     open_new_ter(redirection);
 

@@ -112,7 +112,7 @@ void *server_game(void *args)
           if (fds[i].fd == timercb){
             uint64_t expirations;
             read(timercb, &expirations, sizeof(expirations));
-            printf("complete Timer expired %" PRIu64 " times\n", expirations);
+            //printf("complete Timer expired %" PRIu64 " times\n", expirations);
             if (sendCompleteBoard(g, numc) < 0){
               goto end;
             }

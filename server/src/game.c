@@ -86,7 +86,7 @@ void process_cell(Game *g, int x, int y) {
                 g->plys[player_index]->pos[1] = -1;
                 debug_printf("player killed dans case p:%d\n", player_index);
                 //shutdown
-                // shutdown(g->plys[player_index]->sockcom, SHUT_RD);
+                 shutdown(g->plys[player_index]->sockcom, SHUT_RD);
                 *cell = EXPLOSION;
                 break;
             case EXPLOSION:

@@ -344,6 +344,9 @@ int main_serveur(int freq){
                     perror("creation pthread error dans main_serveur");
                     return 1;
                   }
+                  if(pthread_detach(game)!=0){
+                    perror("detach problem");
+                  }
                   memmove(games+pos1,games+pos1+1,leng-(pos1+1));
                   leng-=1;
                 }

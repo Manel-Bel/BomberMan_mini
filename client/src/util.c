@@ -121,7 +121,7 @@ void refresh_game_line(Line* l, uint8_t h, uint8_t w){
 
 void refresh_game(Board* b, Line* l) {
     // refresh_grid(b);
-    pthread_mutex_lock(&ncurses_mutex);
+    pthread_mutex_lock(&ncurses_mutex_grid);
     for (int x = 0; x < b->w+2; x++) {
         mvaddch(0, x, '-');
         mvaddch(b->h+1, x, '-');
@@ -197,7 +197,7 @@ void refresh_game(Board* b, Line* l) {
     attroff(COLOR_PAIR(5)); // Disable custom color 1
 
     refresh(); // Apply the changes to the terminal
-    pthread_mutex_unlock(&ncurses_mutex);
+    pthread_mutex_unlock(&ncurses_mutex_grid);
 }
 
 

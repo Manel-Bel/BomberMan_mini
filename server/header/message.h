@@ -5,7 +5,13 @@
 #include <poll.h>
 #include "game.h"
 #include "player.h"
-
+/**
+ * @struct Request
+ * @brief Represents a request with a header.
+ * 
+ * @var Request::entete
+ * Header of the request.
+ */
 struct Request{
   uint16_t entete;
 };

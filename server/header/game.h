@@ -9,7 +9,10 @@
 
 
 
-
+/**
+ * @struct Game
+ * @brief Represents the state of a game.
+ */
 struct Game{
   Player *plys[4];
   int lenplys; // nombre joueur en cours

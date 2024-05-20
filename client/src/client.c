@@ -274,8 +274,10 @@ int send_chat_message(const void *args){
     debug_printf("%s msg: %s",STCP,msg.data);
 
     ssize_t total = send_tcp(thread->socket, &msg, msg.len + 3);
-    if(total == 0)
+    if(total == 0){
         je_suis_elimine = 1;
+        debug_printf("%s je suis éliminé",STCP);
+    }
 
     clear_line_msg(thread->line);
 
@@ -288,7 +290,6 @@ void* receive_chat_message(void *arg){
     // ssize_t total = 0;
     ssize_t r;
     ChatMessage *msg = malloc(sizeof(ChatMessage));
-    uint8_t buf[TEXT_SIZE + 3];
 
     struct pollfd fds[1];
     fds[0].fd = thread->socket;
@@ -450,7 +451,7 @@ void *receive_game_data_thread(void *args){
             print_grille(thread->board);
             *thread->is_initialized = 1;
             debug_printf("%s CODEREQ_ID_EQ: %u NUM: %u",RGRID, codereq_id_eq, *thread->num_msg);
-            refresh_game(thread->board, thread->line);
+            refresh_grid(thread->board);
             
         }else{
             // read either freq or the whole grid
@@ -499,7 +500,6 @@ void *receive_game_data_thread(void *args){
             }
             //print_grille(thread->board);
             refresh_grid(thread->board);
-            refresh();
         }
     }
     debug_printf("%s exiting",RGRID);

@@ -1,6 +1,8 @@
 // Build with -lncurses option
 #include "../header/util.h"
 
+pthread_mutex_t ncurses_mutex_line = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t ncurses_mutex_grid = PTHREAD_MUTEX_INITIALIZER;
 
 
 void free_board(Board* board){
@@ -39,6 +41,16 @@ void set_grid(Board* b, int x, int y, int v){
 
 void refresh_grid(Board* b){
     // Update grid
+    pthread_mutex_lock(&ncurses_mutex_grid);
+
+    for (int x = 0; x < b->w+2; x++) {
+        mvaddch(0, x, '-');
+        mvaddch(b->h+1, x, '-');
+    }
+    for (int y = 0; y < b->h+2; y++) {
+        mvaddch(y, 0, '|');
+        mvaddch(y, b->w+1, '|');
+    }
     int x,y;
     for (y = 0; y < b->h; y++) {
         for (x = 0; x < b->w; x++) {
@@ -71,21 +83,12 @@ void refresh_grid(Board* b){
             mvaddch(y+1,x+1,c);
         }
     }
-    // //turn 'E' into empty space after a short delay
-    // usleep(100000);
-
-    // for (y = 0; y < b->h; y++) {
-    //     for (x = 0; x < b->w; x++) {
-    //         if (get_grid(b, x, y) == (uint8_t)4) {
-    //             set_grid(b, x, y, 0);
-    //             mvaddch(y + 1, x + 1, '.');
-    //         }
-    //     }
-    // }
+    refresh();
+    pthread_mutex_unlock(&ncurses_mutex_grid);
 }
 
 void refresh_game_line(Line* l, uint8_t h, uint8_t w){
-
+    pthread_mutex_lock(&ncurses_mutex_line);
     // Draw chat area
     for (int y = h+2; y < h+5; y++) {
         for (int x = 0; x < w+2; x++) {
@@ -112,59 +115,24 @@ void refresh_game_line(Line* l, uint8_t h, uint8_t w){
     attroff(COLOR_PAIR(5)); // Disable custom color 1
 
     refresh(); // Apply the changes to the terminal
+    pthread_mutex_unlock(&ncurses_mutex_line);
 }
 
-void refresh_game(Board* b, Line* l) {
-    
-    refresh_grid(b);
-    for (int x = 0; x < b->w+2; x++) {
-        mvaddch(0, x, '-');
-        mvaddch(b->h+1, x, '-');
-    }
-    for (int y = 0; y < b->h+2; y++) {
-        mvaddch(y, 0, '|');
-        mvaddch(y, b->w+1, '|');
-    }
-    refresh_game_line(l, b->h,b->w);
-}
+// void refresh_game(Board* b, Line* l) {
+//     refresh_grid(b);
+//     pthread_mutex_lock(&ncurses_mutex);
+//     for (int x = 0; x < b->w+2; x++) {
+//         mvaddch(0, x, '-');
+//         mvaddch(b->h+1, x, '-');
+//     }
+//     for (int y = 0; y < b->h+2; y++) {
+//         mvaddch(y, 0, '|');
+//         mvaddch(y, b->w+1, '|');
+//     }
+//     pthread_mutex_unlock(&ncurses_mutex);
+//     refresh_game_line(l, b->h,b->w);
+// }
 
-
-ACTION control(Line* l) {
-    int c;
-    int prev_c = ERR;
-    // We consume all similar consecutive key presses
-    while ((c = getch()) != ERR) { // getch returns the first key press in the queue
-        if (prev_c != ERR && prev_c != c) {
-            ungetch(c); // put 'c' back in the queue
-            break;
-        }
-        prev_c = c;
-    }
-    ACTION a = NONE;
-    switch (prev_c) {
-        // case KEY_BACKSPACE:
-        //     a = BOMB; break;
-        case ERR: break;
-        case KEY_LEFT:
-            a = LEFT; break;
-        case KEY_RIGHT:
-            a = RIGHT; break;
-        case KEY_UP:
-            a = UP; break;
-        case KEY_DOWN:
-            a = DOWN; break;
-        case '~':
-            a = QUIT; break;
-        case KEY_BACKSPACE:
-            if (l->cursor > 0) l->cursor--;
-            break;
-        default:
-            if (prev_c >= ' ' && prev_c <= '~' && l->cursor < TEXT_SIZE)
-                l->data[(l->cursor)++] = prev_c;
-            break;
-    }
-    return a;
-}
 
 int open_new_ter(const char *name){
     int fd = open(name, O_WRONLY | O_CREAT, 0644);
@@ -197,16 +165,6 @@ void extract_codereq_id_eq(uint16_t entete, uint16_t *codereq, uint16_t *id, uin
 
 }
 
-/*!
- * \fn void init_codereq_id_eq(uint16_t *result, uint16_t codereq, uint16_t id, uint16_t eq)
- * \brief This function initializes a 16-bit result by combining the code request, ID, and EQ values.
- * The code request is shifted left by 3 bits, the ID is shifted left by 1 bit, and the EQ is placed in the least significant bit.
- * The resulting value is stored in network byte order using htons().
- * \param result Pointer to a uint16_t variable where the result will be stored.
- * \param codereq The code request value.
- * \param id The ID value.
- * \param eq The EQ value.
- */
 void init_codereq_id_eq(uint16_t *result, uint16_t codereq, uint16_t id, uint16_t eq){
     *result = htons(codereq << 3 | (id << 1) | eq);
 }

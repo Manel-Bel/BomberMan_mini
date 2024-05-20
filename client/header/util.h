@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/types.h> 
+#include <pthread.h>
 #include "debug.h"
 
 
@@ -17,6 +18,7 @@ typedef enum ACTION { UP, RIGHT, DOWN, LEFT, BOMB, DER, QUIT,TCHAT, NONE} ACTION
 
 #define TEXT_SIZE 255
 #define MAX_MSG 8191
+
 
 
 typedef struct Board {
@@ -49,9 +51,6 @@ void refresh_grid(Board* b);
 
 void refresh_game_line(Line* l, uint8_t h, uint8_t w);
 
-void refresh_game(Board* b, Line* l);
-
-ACTION control(Line* l);
 
 void print_grille(Board * b);
 
@@ -85,7 +84,16 @@ void init_interface();
  */
 void extract_codereq_id_eq(uint16_t entete, uint16_t *codereq, uint16_t *id, uint16_t *eq, const char *func);
 
-
+/*!
+ * \fn void init_codereq_id_eq(uint16_t *result, uint16_t codereq, uint16_t id, uint16_t eq)
+ * \brief This function initializes a 16-bit result by combining the code request, ID, and EQ values.
+ * The code request is shifted left by 3 bits, the ID is shifted left by 1 bit, and the EQ is placed in the least significant bit.
+ * The resulting value is stored in network byte order using htons().
+ * \param result Pointer to a uint16_t variable where the result will be stored.
+ * \param codereq The code request value.
+ * \param id The ID value.
+ * \param eq The EQ value.
+ */
 void init_codereq_id_eq(uint16_t *result, uint16_t codereq, uint16_t id, uint16_t eq);
 
 #endif

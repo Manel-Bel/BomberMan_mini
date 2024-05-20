@@ -1,5 +1,4 @@
 #include "../header/game.h"
-#define DEAD 1
 
 void plant_bomb(Game *g, int x, int y) {
     if (g->num_bombs >= SIZEBOMBER) {

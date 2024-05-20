@@ -38,6 +38,11 @@
 #define nbrply 4
 #define TEXTSIZE 255
 #define TIMES 1
+//stat of player
+typedef enum {
+  ALIVE,
+  DEAD
+} PlayerStat;
 
 typedef enum {
     EMPTY,

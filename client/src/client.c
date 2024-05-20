@@ -338,8 +338,9 @@ void* receive_chat_message(void *arg){
                 // refresh_game_line(thread->line,thread->board->h, thread->board->w);
                 refresh_game(thread->board, thread->line);
                 
-                change_val_game_running();
-                break;
+                // change_val_game_running();
+                debug_printf("%s: %s",RTCP,buf);
+                continue;
             }
             r = read_tcp(thread->socket, &(msg->len),1);
             if(r < 1){

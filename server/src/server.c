@@ -160,7 +160,7 @@ void *server_game(void *args){
     }
     int nbVivant = 0;
     for (int i = 0; i < g->lenplys; i++){
-      if (g->plys[i]->stat == 0){
+      if (g->plys[i]->stat == ALIVE){
         nbVivant++;
       }
     }
@@ -172,7 +172,7 @@ void *server_game(void *args){
         endMessage = (15 << 3); //set CODEREQ's first 12 bits
         int idWinner = -1;
         for (int i = 0; i < g->lenplys; i++) {
-            if (g->plys[i]->stat == 0) {
+            if (g->plys[i]->stat == ALIVE) {
                 idWinner = g->plys[i]->id;
                 break;
             }
@@ -182,11 +182,13 @@ void *server_game(void *args){
         debug_printf("idWinner %d\n",idWinner);
         //turn to network byte order
         endMessage = htons(endMessage);
-
+        debug_printf("avant le boucle: lenplys %d\n",g->lenplys);
         //send end game message to all players
         for (int i = 0; i < g->lenplys; i++) {
+            debug_printf("send end game message to player %d\n",g->plys[i]->id);
             sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
         }
+        printf("start sleeping for 5 seconds\n");
         sleep(5);//wait for 5 seconds before closing sockets
         break;
     }
@@ -196,7 +198,7 @@ void *server_game(void *args){
         int allInSameTeam = 1;
         for (int i = 0; i < g->lenplys; i++)
         {
-            if (g->plys[i]->stat == 0)
+            if (g->plys[i]->stat == ALIVE)
             {
                 if (idsurv == -1)
                 {
@@ -227,18 +229,20 @@ void *server_game(void *args){
             debug_printf("send end game message to player %d\n",g->plys[i]->id);
             sendTCP(g->plys[i]->sockcom, (uint8_t *)&endMessage, sizeof(endMessage));
         }
-        sleep(5);//wait for 5 seconds before closing sockets
+        debug_printf("start sleeping for 5 seconds\n");
+        sleep(5);//wait for 5 seconds before closing socketsf
         break;
     }
 
   }
 
 end:
-  debug_printf("free game\n");
+  sleep(10);//wait for 5 seconds before closing sockets
+  printf("free game\n");
   free_game(g);
   close(timercb);
   close(timerfb);
-
+  printf("after free game\n");
   return NULL;
 }
 

@@ -23,3 +23,15 @@ project_folder/
 │ │ └── (server sources)  
 │ └── Makefile  
 │
+
+#To START A GAME 
+I. Run server
+ 1. Go to folder Projet_reseau/server 
+ 2. Execute make 
+ 3. Run ./server freq (where freq must be a number which indicates the interval to send the differential in ms)
+II. Run client
+ 1. Go to folder Projet_reseau/client
+ 2. Execute make
+ 3. Run ./client machine_name file_name_to_save_logs (the file is automatically created during execution)
+
+

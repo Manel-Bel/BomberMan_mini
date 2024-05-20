@@ -46,3 +46,5 @@ II. Run client
 **To plant a bomb**, use the symbol $ . 
 
 **To quit** the game when you are in the graphical interface, use ~ .
+
+**To send chat messages to team members**, use the symbol @ before entering the message.

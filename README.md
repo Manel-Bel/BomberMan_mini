@@ -24,7 +24,7 @@ project_folder/
 │ └── Makefile  
 │
 
-#To START A GAME
+# To START A GAME
 
 I. Run server
 

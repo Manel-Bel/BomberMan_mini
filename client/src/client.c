@@ -329,7 +329,7 @@ void* receive_chat_message(void *arg){
                 if(codereq==15)
                     snprintf(buf, sizeof(buf), "winning player %d", id);
                 else if(codereq==16)
-                        snprintf(buf, sizeof(buf), "winning team %d", eq);
+                    snprintf(buf, sizeof(buf), "winning team %d", eq);
                 else{
                     debug_printf("%s unknown codereq %d",RTCP);
                     break;

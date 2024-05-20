@@ -44,24 +44,7 @@ void init_grille(uint8_t *grille) {
 }
 
 
-// void print_grille(char **grille) {
-//     for (int i = 0; i < H; i++) {
-//         for (int j = 0; j < W; j++) {
-//             switch (grille[i][j]) {
-//                 case 0:
-//                     printf("0 "); // Espace ouvert
-//                     break;
-//                 case 1:
-//                     printf("1 "); // Mur indestructible
-//                     break;
-//                 case 2:
-//                     printf("2 "); // Mur destructible
-//                     break;
-//             }
-//         }
-//         printf("\n");
-//     }
-// }
+
 
 void print_grille_1D(uint8_t *grille){
 
@@ -100,22 +83,3 @@ void print_grille(Board * b){
        fprintf(stderr,"\n");
     }
 }
-
-/*int main5555() {
-    int **grille = malloc(H * sizeof(int*));
-    for (int i = 0; i < H; i++) {
-        grille[i] = malloc(W * sizeof(int));
-    }
-
-    init_grille(grille);
-    print_grille(grille);
-
-    // Libérer la mémoire
-    for (int i = 0; i < H; i++) {
-        free(grille[i]);
-    }
-    free(grille);
-
-    return 0;
-}*/
-//gcc -o grille_test grille_test.c && ./grille_test

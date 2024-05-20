@@ -15,20 +15,6 @@ void plant_bomb(Game *g, int x, int y) {
 
 void explode_bomb(Game *g, int x, int y) {
 
-    //int blast_radius = 2; 
-    // // Remove destructible walls, players, and mark explosions in the blast radius
-    // for (int k = 0; k <= blast_radius; k++) {
-    //     // Horizontal and vertical lines
-    //     for (int i = -k; i <= k; i++) {
-    //         int nx = x + i;
-    //         int ny = y;
-    //         process_cell(g, nx, ny);
-
-    //         nx = x;
-    //         ny = y + i;
-    //         process_cell(g, nx, ny);
-    //     }
-    // }
     //self
     process_cell(g, x, y);
     //UP
@@ -266,15 +252,13 @@ int serverUdp(int sock, int port)
 /* fonction pour liberer la memoire d'un tableau de type Game ,  */
 
 
-int initgame(Game *g, char mode, int h, int w)
-{
+int initgame(Game *g, char mode, int h, int w){
   g->lenplys = 0;
   g->mode = mode;
   g->lastmultiboard = malloc(h * w);
   g->nbrready=0;
 
-  if (g->lastmultiboard == NULL)
-  {
+  if (g->lastmultiboard == NULL){
     perror("problem malloc in createBoard");
     free(g);
     return 1;
@@ -286,8 +270,7 @@ int initgame(Game *g, char mode, int h, int w)
   g->board.w = w;
   g->num_bombs=0;
 
-  if (g->board.grid == NULL)
-  {
+  if (g->board.grid == NULL){
     perror("problem malloc in createBoard");
     free(g->lastmultiboard);
     free(g);
@@ -306,15 +289,13 @@ int initgame(Game *g, char mode, int h, int w)
   g->sock_udp = socket(PF_INET6, SOCK_DGRAM, 0);
   debug_printf("sock_udp %d \n", g->sock_udp);
 
-  if (g->sock_udp < 0)
-  {
+  if (g->sock_udp < 0){
     perror("creation sock_udp");
   }
 
   int r = serverUdp(g->sock_udp, g->port_udp);
   /* en cas echec*/
-  if (r)
-  {
+  if (r){
     perror("erreur dans initgame");
     return 1;
   }
@@ -325,8 +306,7 @@ int initgame(Game *g, char mode, int h, int w)
   g->sock_mdiff = socket(PF_INET6, SOCK_DGRAM, 0);
 
   debug_printf("socket multi %d \n", g->sock_mdiff);
-  if (g->sock_mdiff < 0)
-  {
+  if (g->sock_mdiff < 0){
     perror("creation sockdiff");
     free_game(g);
   }
@@ -338,8 +318,7 @@ int initgame(Game *g, char mode, int h, int w)
 
   r = serverMultiCast(g->sock_mdiff, g->port_mdiff, &g->addr_mdiff);
 
-  if (r)
-  {
+  if (r){
     perror("erreur dans serverMultiCast");
     return 1;
   }
@@ -351,48 +330,34 @@ int initgame(Game *g, char mode, int h, int w)
   return 0;
 }
 
-void action_perform(uint8_t *board, int action, Player *p, Game *game)
-{
+void action_perform(uint8_t *board, int action, Player *p, Game *game){
   int numcaseply = 5 + p->id;
   int x=p->pos[0];
   int y=p->pos[1];
   int x2 = x;
   int y2 = y;
 
-  switch (action)
-  {
+  switch (action){
   case 0:
-    if (y <= 0)
-    {
-      return;
-    }
+    if (y <= 0) return;
 
     y2--;
 
     break;
   case 1:
-    if (x >= W - 1)
-    {
-      return;
-    }
+    if (x >= W - 1) return;
 
     x2++;
 
     break;
 
   case 2:
-    if (y >= H - 1)
-    {
-      return;
-    }
+    if (y >= H - 1) return;
     y2++;
 
     break;
   case 3:
-    if (x <= 0)
-    {
-      return;
-    }
+    if (x <= 0) return;
     x2--;
     break;
   case 4:
@@ -401,10 +366,8 @@ void action_perform(uint8_t *board, int action, Player *p, Game *game)
   default:
   }
 
-  if (!board[(y2)*W + x2])
-  {
-    if (action <= 3)
-    {
+  if (!board[(y2)*W + x2]){
+    if (action <= 3){
       debug_printf("action realisé %d\n", action);
       if(board[y * W + x] != 3)
         board[y * W + x] = 0;
@@ -417,8 +380,7 @@ void action_perform(uint8_t *board, int action, Player *p, Game *game)
 
 /* retourne le nombre de difference entre board et board1*/
 
-int nbrDiff(uint8_t *board, char *board1)
-{
+int nbrDiff(uint8_t *board, char *board1){
   int comp = 0;
   for (int i = 0; i < H * W; i++)
   {
@@ -450,15 +412,13 @@ void fillDiff(uint8_t *buff, uint8_t *b, char *bdiff){
 }
 
 
-void handling_Action_Request(Game *g)
-{
+void handling_Action_Request(Game *g){
   uint8_t buf[4];
   memset(buf, 0, 4);
 
   int r = recvfrom(g->sock_udp, buf, 10, 0, NULL, NULL);
   // debug_printf("%d octet recu\n ",r);
-  if (r < 0)
-  {
+  if (r < 0){
     perror("probleme recvfrom in ghangling_Action_Request");
   }
 
@@ -478,17 +438,15 @@ void handling_Action_Request(Game *g)
     debug_printf("le joueur est mort dans handling action request\n");
     return;
   }
-  if (action.action >= 0 && action.action <= 3){
+  if (action.action >= UP && action.action <=RIGHT ){
     if (action.num > g->plys[id]->moveaction.num || (action.num==0 && g->plys[id]->moveaction.num==8191) ){
       g->plys[id]->moveaction = action;
     }
   }
-  else if (action.action == 4)
-  {
+  else if (action.action == PLACE_BOMB){
     g->plys[id]->poseBombe = 1;
   }
-  else if (action.action == 5)
-  {
+  else if (action.action ==DER){
     g->plys[id]->annuleraction = 1;
   }
 }
@@ -499,7 +457,7 @@ void clean_explosion(Game *g){
         if (g->board.grid[i] == EXPLOSION) {
             g->board.grid[i] = EMPTY;
         }
-    }
+  }
 }
 
 
@@ -507,20 +465,16 @@ void clean_explosion(Game *g){
 // 1 si une partie est lancé et joueur est integrer dans une nouvelle partie
 // 2 sinon
 
-int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab)
-{
+int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab){
   int i;
-  for (i = 0; i < *lentab; i++)
-  {
-    if (g[i]->lenplys < nbrply && g[i]->mode==mode)
-    {
+  for (i = 0; i < *lentab; i++){
+    if (g[i]->lenplys < nbrply && g[i]->mode==mode){
       break;
     }
   }
   if (i == *lentab){
     g[i] = malloc(sizeof(Game));
-    if (g[i] == NULL)
-    {
+    if (g[i] == NULL){
       perror("malloc in integerOrlancerPartie");
       return 2;
     }

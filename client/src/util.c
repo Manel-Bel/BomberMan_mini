@@ -1,7 +1,7 @@
 // Build with -lncurses option
 #include "../header/util.h"
+#include <locale.h>
 
-pthread_mutex_t ncurses_mutex_line = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t ncurses_mutex_grid = PTHREAD_MUTEX_INITIALIZER;
 
 
@@ -88,8 +88,8 @@ void refresh_grid(Board* b){
 }
 
 void refresh_game_line(Line* l, uint8_t h, uint8_t w){
-    pthread_mutex_lock(&ncurses_mutex_line);
     // Draw chat area
+    pthread_mutex_lock(&ncurses_mutex_grid);
     for (int y = h+2; y < h+5; y++) {
         for (int x = 0; x < w+2; x++) {
             mvaddch(y, x, ' ');
@@ -113,9 +113,9 @@ void refresh_game_line(Line* l, uint8_t h, uint8_t w){
     mvaddstr(h+4, 1, l->data); // Print user input
     attroff(A_BOLD); // Disable bold
     attroff(COLOR_PAIR(5)); // Disable custom color 1
-
     refresh(); // Apply the changes to the terminal
-    pthread_mutex_unlock(&ncurses_mutex_line);
+    pthread_mutex_unlock(&ncurses_mutex_grid);
+
 }
 
 // void refresh_game(Board* b, Line* l) {
@@ -171,6 +171,7 @@ void init_codereq_id_eq(uint16_t *result, uint16_t codereq, uint16_t id, uint16_
 
 void init_interface(){
     // NOTE: All ncurses operations (getch, mvaddch, refresh, etc.) must be done on the same thread.
+    setlocale(LC_ALL, "");
     initscr();
     raw();
     intrflush(stdscr, FALSE);

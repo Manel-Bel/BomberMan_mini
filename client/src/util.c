@@ -162,17 +162,18 @@ void refresh_game(Board* b, Line* l) {
             mvaddch(y+1,x+1,c);
         }
     }
-    for (int x = 0; x < b->w+2; x++) {
-        mvaddch(0, x, '-');
-        mvaddch(b->h+1, x, '-');
-    }
-    for (int y = 0; y < b->h+2; y++) {
-        mvaddch(y, 0, '|');
-        mvaddch(y, b->w+1, '|');
-    }
+    // for (int x = 0; x < b->w+2; x++) {
+    //     mvaddch(0, x, '-');
+    //     mvaddch(b->h+1, x, '-');
+    // }
+    // for (int y = 0; y < b->h+2; y++) {
+    //     mvaddch(y, 0, '|');
+    //     mvaddch(y, b->w+1, '|');
+    // }
+    
 
     // Draw chat area
-    for (int y = b->h+2; y < b->h+5; y++) {
+    for (int y = b->h+2; y < b->h+5 + 1; y++) {
         for (int x = 0; x < b->w+2; x++) {
             mvaddch(y, x, ' ');
         }
@@ -181,7 +182,7 @@ void refresh_game(Board* b, Line* l) {
     // Draw last two messages
     if(l->id_last_msg2 > 0){
         attron(COLOR_PAIR(l->id_last_msg2)); // Enable custom color 2
-        mvaddstr(b->h+2, 1, l->last_msg2); // Print last message 1
+        mvaddstr(b->h+2 , 1, l->last_msg2); // Print last message 1
         attroff(COLOR_PAIR(l->id_last_msg2));
     }
     if(l->id_last_msg1 > 0){
@@ -189,10 +190,13 @@ void refresh_game(Board* b, Line* l) {
         mvaddstr(b->h+3, 1, l->last_msg1); // Print last message 2
         attroff(COLOR_PAIR(l->id_last_msg1));
     }
+    for (int x = 0; x < b->w+2; x++) {
+        mvaddch(b->h+4, x, '-');
+    }
     // Update chat text
     attron(COLOR_PAIR(5)); // Enable custom color 1
     attron(A_BOLD); // Enable bold
-    mvaddstr(b->h+4, 1, l->data); // Print user input
+    mvaddstr(b->h+4 + 1, 1, l->data); // Print user input
     attroff(A_BOLD); // Disable bold
     attroff(COLOR_PAIR(5)); // Disable custom color 1
 

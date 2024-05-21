@@ -305,8 +305,17 @@ int integrerPartie(Game **g, Player *p, int mode, int freq, int *lentab){
   }
 
   // add player in game and send port and initinfo to player
-  g[i]->plys[g[i]->lenplys] = p;
-  p->id=g[i]->lenplys;
+  int j = 0;
+  for(j = 0; j < nbrply; j++){
+    if(g[i]->plys[j]==NULL){
+      break;
+    }
+  }
+  g[i]->plys[j] = p;
+  p->id = j;
+
+  // g[i]->plys[g[i]->lenplys] = p;
+  // p->id=g[i]->lenplys;
   if(mode == 2){
     if(p->id<(nbrply/2))
       p->idEq=0;
@@ -378,7 +387,7 @@ int initgame(Game *g, char mode, int h, int w){
     perror("erreur dans serverMultiCast");
     return 1;
   }
-
+  memset(g->plys,0,sizeof(g->plys));
   init_grille(g->board.grid);
   printf("on a bien init une game (fin init)\n");
   return 0;

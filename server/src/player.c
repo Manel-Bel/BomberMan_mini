@@ -8,7 +8,6 @@ Player * createplayer(int sock,int mode){
     perror("problem de malloc dans createplayer");
     return p;
   }
- 
   p->Ready = 0;
   p->mode=mode;
   p->sockcom=sock;
@@ -16,9 +15,9 @@ Player * createplayer(int sock,int mode){
   p->moveaction.action=-1;
   p->idEq=0;
   p->stat=ALIVE;
+  p->readCD=0;
 
   return p;
-
 }
 
 void free_player(Player *p){

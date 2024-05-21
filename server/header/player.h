@@ -30,18 +30,15 @@ struct Player{
     char poseBombe; // 1 si une demande de poser une bombe 
     char stat; // 0:vivant(e) 1:mort(e) 
     char mode;
+    int readCD; // 1 min
 };
 
 
 /*create player*/
 Player * createplayer(int sock,int mode);
+
 /*free player*/
 void free_player(Player *p);
-
-
-
-
-
 
 
 #endif

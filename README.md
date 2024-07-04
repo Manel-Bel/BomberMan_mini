@@ -2,13 +2,15 @@
 
 ## description 
 Description : Développement d'un serveur et d'un client pour un jeu de Bomberman en réseau avec quatre joueurs sur une grille, intégrant des mécanismes de placement de bombes et de destruction de murs.
-Fonctionnalités :
+
+##Fonctionnalités :
 Gestion de plusieurs parties simultanées.
 Modes de jeu : 4 adversaires et équipes de 2 joueurs.
 Échanges en temps réel via TCP et UDP.
 Multidiffusion de la grille de jeu et chat intégré.
 Fin de partie avec annonce du gagnant.
-Technologies utilisées : Programmation réseau, protocoles TCP/UDP, gestion de connexions multiples, mise à jour en temps réel.
+
+##Technologies utilisées : Programmation réseau, protocoles TCP/UDP, gestion de connexions multiples, mise à jour en temps réel.
 
 1.  include the -lncurses option after the prograam name
 2.  gcc ./src/client.c -lncurse

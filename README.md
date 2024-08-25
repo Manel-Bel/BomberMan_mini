@@ -1,18 +1,19 @@
-# Projet_reseau
+# Network_Project
 
-## description 
-Développement d'un serveur et d'un client pour un jeu de Bomberman en réseau avec quatre joueurs sur une grille, intégrant des mécanismes de placement de bombes et de destruction de murs.
+## Description 
+Development of a server and client for a networked Bomberman game with four players on a grid, featuring bomb placement and wall destruction mechanisms.
 
-## Fonctionnalités :
-Gestion de plusieurs parties simultanées.
-Modes de jeu : 4 adversaires et équipes de 2 joueurs.
-Échanges en temps réel via TCP et UDP.
-Multidiffusion de la grille de jeu et chat intégré.
-Fin de partie avec annonce du gagnant.
+## Features :
+Management of multiple simultaneous games.
+Game modes: 4-player free-for-all and 2-player teams.
+Real-time communication via TCP and UDP.
+Multicasting of the game grid and integrated chat functionality.
+Game conclusion with the announcement of the winner.
 
-## Technologies utilisées : Programmation réseau, protocoles TCP/UDP, gestion de connexions multiples, mise à jour en temps réel.
+## Technologies Used : Network programming, TCP/UDP protocols, multiple connection management, real-time updates.
 
-1.  include the -lncurses option after the prograam name
+## Compilation :
+1.  Include the -lncurses option after the program name:
 2.  gcc ./src/client.c -lncurse
 
 
@@ -20,16 +21,15 @@ Fin de partie avec annonce du gagnant.
 
 I. Run server
 
-1.  Go to folder Projet_reseau/server
-2.  Execute make
-3.  Run ./server \<freq> (where freq must be a number which indicates the interval to send the differential in ms)
+1.  Navigate to the Projet_reseau/server folder.
+2.  Execute make.
+3.  Run ./server <freq> (where freq is a number indicating the interval to send the differential in milliseconds).
 
-II. Run client
+II. Run the Client
 
-1.  Go to folder Projet_reseau/client
-2.  Execute make
-3.  Run ./client \<server address name> \<optionall : file_name_to_save_logs> (the file is automatically created during execution)
-
+1.  Navigate to the Projet_reseau/client folder.
+2.  Execute make.
+3.  RRun ./client <server address> <optional: file_name_to_save_logs> (the file is automatically created during execution).
 
 # How to Play 
 
